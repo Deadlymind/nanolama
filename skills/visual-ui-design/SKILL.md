@@ -51,10 +51,11 @@ daily: density is a feature, and every visual choice must survive the question
    system-wide token architecture belongs to `design-system`.
 6. **Design every state.** Loading, background refresh, empty, no-results,
    validation error, permission denied, read-only, disabled-with-reason,
-   success, failure, stale data, conflict, long-running, partial success. On
-   this stack, screen regions stream in independently (Suspense boundaries), so
-   design a space-reserving skeleton per region — never one whole-page spinner —
-   and expect regions to arrive in any order without shifting the layout.
+   success, failure, stale data, conflict, long-running, partial success. When
+   the page streams regions through Suspense boundaries, design a
+   space-reserving skeleton per streamed region — never one whole-page
+   spinner — and make sure regions can resolve in any order without
+   destabilizing the layout.
 7. **Add microinteractions only where they communicate** — progress, cause and
    effect, state change, success, failure, error prevention. Specify trigger,
    response, duration category, interruption behavior, and the reduced-motion

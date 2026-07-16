@@ -15,11 +15,14 @@ exists, what things mean, and how the system stays coherent as it grows.
 
 ## Pattern
 A design system is semantics plus governance, not a component collection.
-Every color, type style, and spacing value is a **semantic role** (`danger`,
-`surface`, `page-title`) that means the same thing in every module — never a
-feature-specific value (`invoice-red`) — and every shared component has a
-written contract. Without contribution rules, duplicate detection, and a
-deprecation path, a token file is just a prettier way to drift.
+Keep a small primitive foundation — palette values, spacing steps, type
+measurements — and expose **semantic roles** (`danger`, `surface`,
+`page-title`) on top of it as the product-facing vocabulary that means the
+same thing in every module. Feature code consumes semantic roles, never raw
+primitives or feature-specific names (`invoice-red`), and every shared
+component has a written contract. Without contribution rules, duplicate
+detection, and a deprecation path, a token file is just a prettier way to
+drift.
 
 ## Workflow
 1. **Audit what exists.** Inventory tokens, colors, typography, spacing, radii,

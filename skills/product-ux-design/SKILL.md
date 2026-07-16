@@ -51,7 +51,10 @@ the deepest design and rare admin paths get the cheapest safe one.
    an accountant thinks "monthly closing", not "seven tables with foreign keys".
 6. **Inventory every screen.** Purpose, the user question it answers, primary
    action, secondary and destructive actions, required information, entry point,
-   exit point, important states. One primary action per screen.
+   exit point, important states. Give each screen one dominant purpose and one
+   clearly dominant action where the workflow allows it; when multiple
+   legitimate decisions exist (approve vs return for correction), rank and
+   differentiate them rather than presenting equals.
 7. **Stage disclosure.** Immediately visible → frequent → advanced → conditional
    → hidden until requested → confirmed before executing. Approval and deletion
    sit at the confirmed end; everyday entry sits at the visible end.
@@ -116,8 +119,10 @@ write failure copy as what-happened + reference + next step (`nextjs-module`).
   keeps three avoidable clicks inverts the frequency rule in Pattern.
 - Design workflow-level error *prevention* (defaults, constraints, confirmation
   for the irreversible), not just error messages after the fact. On failure,
-  keep every field as the user entered it and validate on submit rather than on
-  every blur, unless evidence says otherwise.
+  keep every field as the user entered it, and validate at the least disruptive
+  moment that still prevents costly correction — immediately for impossible
+  input, after field completion for useful local feedback, on submit for the
+  complete business rule. Avoid noisy validation on every blur.
 - Any flow operated by dragging (kanban moves, reordering, file drop) needs a
   designed single-pointer alternative (WCAG 2.2 SC 2.5.7) — a flow decision,
   not an audit retrofit.

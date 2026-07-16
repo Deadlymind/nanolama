@@ -46,10 +46,11 @@ user's next action, which is often an exception, not the biggest number.
    number-reading edge (right in LTR — mirror-check under RTL) with tabular
    figures, identifiers and statuses scannable, exceptions surfaced, row and
    bulk actions, sticky headers, totals and subtotals that reconcile with the
-   detail, pagination or virtualization (which commits to fixed row heights and
-   single-line cells — plan for it), and a mobile-web alternative. When a table
-   overwhelms, shrink the data first — split it or cut columns — before
-   shrinking the type.
+   detail, pagination or virtualization (most predictable with stable or
+   measurable row heights — variable-height rows need explicit measurement and
+   scroll-stability handling, so design for those constraints before adopting
+   it), and a mobile-web alternative. When a table overwhelms, shrink the data
+   first — split it or cut columns — before shrinking the type.
 6. **Specify filters and saved views.** Global vs local scope, defaults, date
    periods, tenant/client context, persistence and URL state, reset, sharing —
    and active filters always visible, or users will mistake a filtered view
@@ -63,8 +64,8 @@ user's next action, which is often an exception, not the biggest number.
 9. **Design the data states.** Loading, background refresh, stale, delayed,
    partial, source unavailable, zero, no data, filtered-to-nothing,
    calculation error — with the last-refresh time visible. Zero is a value;
-   missing is a problem; an empty filter result is neither. Zones stream in
-   independently on this stack — per-zone skeleton treatment is
+   missing is a problem; an empty filter result is neither. When zones stream
+   in independently (Suspense), per-zone skeleton treatment is
    `visual-ui-design`'s rule; this skill decides what each zone says while
    its data is absent, stale, or partial.
 
