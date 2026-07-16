@@ -50,6 +50,20 @@ With gratitude to:
 - The README skeleton (badge row, install snippet, category table) and the
   generate-the-catalog-from-a-data-file convention. Pattern reference only.
 
+## kodustech/awesome-agent-skills — no license declared
+<https://github.com/kodustech/awesome-agent-skills> (fronted by <https://ai-skills.io>)
+
+- Surveyed as a **capability directory** to find gaps in this library. The repo
+  declares **no license**, so **no text or code was copied** — only engineering
+  *principles* were noted and rewritten from scratch for our stack. Skills whose
+  gap was surfaced this way (e.g. [`observability`](skills/observability/SKILL.md),
+  [`audit-logging`](skills/audit-logging/SKILL.md),
+  [`accessibility`](skills/accessibility/SKILL.md),
+  [`frontend-perf`](skills/frontend-perf/SKILL.md),
+  [`production-readiness`](skills/production-readiness/SKILL.md)) are original work.
+  Individual skills linked from that directory carry their own upstream licenses; we
+  did not vendor any of them.
+
 ---
 
 All third-party names and trademarks belong to their respective owners. If you believe

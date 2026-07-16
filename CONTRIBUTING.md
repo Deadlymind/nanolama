@@ -61,6 +61,11 @@ python -m pytest -q
 
 Install dev tooling once with `pip install -r requirements-dev.txt`.
 
+`validate_skills.py` enforces the whole contract mechanically: frontmatter fields and
+limits, the five house sections **in order**, unique descriptions, cross-references and
+local file links that resolve, and a valid `allowed-tools`/`disallowed-tools` shape.
+`tests/test_validator_negative.py` keeps those checks honest with invalid fixtures.
+
 ## Attribution
 
 Adapt, never blind-copy. If you adapt structure or wording from another public repo,
