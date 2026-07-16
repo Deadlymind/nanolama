@@ -16,6 +16,10 @@ install or pin, find the current stable and LTS release and its support/EOL wind
 the authoritative source *now*, then pin the version that stays in support across your
 horizon. Prefer an LTS/maintained line for production; avoid a major whose EOL is near.
 
+This step **requires live web access** — WebSearch/WebFetch, or a shell with network.
+If the session has neither, say so and do not guess: an offline answer to "which
+version" is a recollection, not a check.
+
 ## The check — where to look, at your install time
 - **Support / EOL windows** → `https://endoflife.date/<product>` (or `/api/<product>.json`):
   python, django, postgresql, nodejs, redis, valkey, nextjs.
@@ -29,16 +33,24 @@ horizon. Prefer an LTS/maintained line for production; avoid a major whose EOL i
   release calendar, and the ElastiCache engine-versions doc; then confirm per account/region.
 
 ```bash
-# Confirm the CURRENT version yourself — never paste a remembered number.
+# Fast path: the bundled checker queries endoflife.date, PyPI and npm in one shot.
+python scripts/check_versions.py                # relative to this skill; needs outbound HTTPS
+#   installed as a plugin: python "$CLAUDE_PLUGIN_ROOT/skills/version-check/scripts/check_versions.py"
+
+# Or confirm any single number yourself — never paste a remembered one:
 curl -s https://pypi.org/pypi/django/json      | jq -r .info.version   # newest Django on PyPI
 curl -s https://registry.npmjs.org/next/latest | jq -r .version        # newest Next.js on npm
 curl -s https://endoflife.date/api/python.json | jq -r '.[0].cycle, .[0].eol'  # newest Python + its EOL
 aws rds describe-db-engine-versions --engine postgres --default-only   # what RDS actually offers here
 ```
 
-## Baseline as of 2026-07-16 (re-verify — this WILL go stale)
-Highlights; the full dated table with sources is in
-[`reference/stack-versions-2026-07.md`](reference/stack-versions-2026-07.md).
+The checker prints raw numbers; you still apply judgment (LTS vs latest,
+compatibility, AWS-platform lag) — that is the "deep research", not just the fetch.
+
+## Example snapshot (2026-07-16 — an example, NOT an answer)
+This is what a check *looked like* on one day, to show the shape of the output — **do
+not reuse these numbers; run the check above for today's.** Full dated table with
+sources: [`reference/stack-versions-2026-07.md`](reference/stack-versions-2026-07.md).
 
 - **Django 5.2 LTS** is the current LTS (supported to 2028-04); 6.0 is the newest
   *non-LTS* release; **4.2 LTS ended 2026-04-07**. The house Django pin still holds.
