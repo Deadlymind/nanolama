@@ -6,13 +6,18 @@ For every skill under ``skills/<name>/SKILL.md`` this checks:
   * valid YAML frontmatter delimited by ``---`` fences;
   * ``name`` present, equal to the directory name, matching the Agent Skills
     spec (<=64 chars, ``[a-z0-9-]``, no reserved words ``anthropic``/``claude``);
-  * ``description`` present, non-empty, <=1024 chars, third person, carrying a
-    ``Use when ...`` trigger clause, with no XML tags;
-  * only portable frontmatter fields are used;
-  * the body is non-trivial and contains the house section headings;
-  * every backticked cross-reference under ``## See also`` names a real skill.
+  * ``description`` present, 40-1024 chars, third person, carrying a
+    ``Use when ...`` trigger clause, no XML tags, and unique across skills;
+  * only portable frontmatter fields are used, and ``allowed-tools`` /
+    ``disallowed-tools`` (if present) are a string or a list of strings;
+  * the body is non-trivial and contains the house section headings IN ORDER;
+  * every ``backticked`` cross-reference under ``## See also`` names a real skill;
+  * every local markdown link to a bundled file resolves to a file that exists.
 
 It also checks ``scripts/catalog.yaml`` is in 1:1 sync with ``skills/``.
+
+Per-skill ``license`` frontmatter is optional: the repository LICENSE (MIT)
+applies to every skill unless a skill overrides it.
 
 Exit code 0 = green, 1 = one or more problems, 2 = environment error.
 Pure standard library plus PyYAML.
@@ -39,14 +44,24 @@ NAME_RE = re.compile(r"^[a-z0-9-]{1,64}$")
 RESERVED_WORDS = ("anthropic", "claude")
 XML_TAG_RE = re.compile(r"<[^>]+>")
 FIRST_PERSON_RE = re.compile(r"\b(I can|I will|I'll|you can|you should|you'll)\b", re.IGNORECASE)
+MARKDOWN_LINK_RE = re.compile(r"\]\(([^)]+)\)")
+# Only markdown links that clearly point at a bundled file are link-checked; this
+# avoids flagging illustrative, non-file link text.
+LOCAL_FILE_HINT_RE = re.compile(r"\.(md|py|png|svg|jpe?g|json|ya?ml|txt|sh|toml|mjs|ts)$", re.IGNORECASE)
+
 DESCRIPTION_MAX = 1024
+DESCRIPTION_MIN = 40
 BODY_MIN = 200
 
 # Frontmatter fields that are portable across every Skills surface (API,
 # claude.ai, Claude Code). Anything else risks silently not working somewhere.
-ALLOWED_FIELDS = {"name", "description", "license", "allowed-tools", "metadata", "compatibility"}
+ALLOWED_FIELDS = {
+    "name", "description", "license", "allowed-tools",
+    "disallowed-tools", "metadata", "compatibility",
+}
+TOOL_LIST_FIELDS = ("allowed-tools", "disallowed-tools")
 
-# House sections every nanolama skill must carry, for a consistent library.
+# House sections every nanolama skill must carry, in this order.
 REQUIRED_SECTIONS = (
     "## When to use",
     "## Pattern",
@@ -55,7 +70,6 @@ REQUIRED_SECTIONS = (
     "## See also",
 )
 
-VALID_CATEGORIES_FALLBACK = set()  # populated from catalog at runtime
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 
 
@@ -104,8 +118,11 @@ def check_skill(skill_dir: Path, all_names: set[str]) -> list[str]:
         errors.append(f"{name_dir}: frontmatter missing required `description`")
     else:
         desc = str(desc)
+        stripped = desc.strip()
         if len(desc) > DESCRIPTION_MAX:
             errors.append(f"{name_dir}: description is {len(desc)} chars (>{DESCRIPTION_MAX})")
+        if len(stripped) < DESCRIPTION_MIN:
+            errors.append(f"{name_dir}: description is only {len(stripped)} chars (<{DESCRIPTION_MIN}) - too thin to trigger well")
         if XML_TAG_RE.search(desc):
             errors.append(f"{name_dir}: description must not contain XML tags")
         if "use when" not in desc.lower():
@@ -119,6 +136,9 @@ def check_skill(skill_dir: Path, all_names: set[str]) -> list[str]:
                 f"{name_dir}: non-portable frontmatter field '{field}' "
                 f"(allowed: {', '.join(sorted(ALLOWED_FIELDS))})"
             )
+    for tool_field in TOOL_LIST_FIELDS:
+        if tool_field in meta and not _valid_tool_field(meta[tool_field]):
+            errors.append(f"{name_dir}: '{tool_field}' must be a string or a list of strings")
 
     if body is not None:
         if len(body.strip()) < BODY_MIN:
@@ -126,9 +146,32 @@ def check_skill(skill_dir: Path, all_names: set[str]) -> list[str]:
         for section in REQUIRED_SECTIONS:
             if section not in body:
                 errors.append(f"{name_dir}: body missing required section '{section}'")
+        errors.extend(_check_section_order(name_dir, body))
         errors.extend(_check_cross_refs(name_dir, body, all_names))
+        errors.extend(_check_local_links(name_dir, skill_dir, body))
 
     return errors
+
+
+def _valid_tool_field(value) -> bool:
+    if isinstance(value, str):
+        return True
+    if isinstance(value, list):
+        return all(isinstance(item, str) for item in value)
+    return False
+
+
+def _check_section_order(name_dir: str, body: str) -> list[str]:
+    """The required headings that ARE present must appear in canonical order."""
+    present = [(body.find(sec), sec) for sec in REQUIRED_SECTIONS if sec in body]
+    found_order = [sec for _, sec in sorted(present)]
+    expected_order = [sec for sec in REQUIRED_SECTIONS if sec in {s for _, s in present}]
+    if found_order != expected_order:
+        return [
+            f"{name_dir}: house sections out of order - "
+            f"expected {expected_order}, found {found_order}"
+        ]
+    return []
 
 
 def _check_cross_refs(name_dir: str, body: str, all_names: set[str]) -> list[str]:
@@ -138,11 +181,52 @@ def _check_cross_refs(name_dir: str, body: str, all_names: set[str]) -> list[str
     if idx == -1:
         return errors
     section = body[idx:]
-    # The "See also" section is exclusively for skill cross-references, so every
-    # backticked lowercase token in it must resolve to a real skill (catches typos).
     for token in re.findall(r"`([a-z0-9-]+)`", section):
         if token not in all_names:
             errors.append(f"{name_dir}: 'See also' references unknown skill `{token}`")
+    return errors
+
+
+def _check_local_links(name_dir: str, skill_dir: Path, body: str) -> list[str]:
+    """Local markdown links that point at a bundled file must resolve."""
+    errors: list[str] = []
+    for target in MARKDOWN_LINK_RE.findall(body):
+        raw = target.strip()
+        if raw.startswith(("http://", "https://", "#", "mailto:")):
+            continue
+        rel = raw.split("#", 1)[0].strip()
+        if not rel:
+            continue
+        # Only enforce links that clearly reference a bundled file.
+        if not (LOCAL_FILE_HINT_RE.search(rel) or rel.startswith(("reference/", "scripts/"))):
+            continue
+        if not (skill_dir / rel).exists():
+            errors.append(f"{name_dir}: broken local link `{raw}` (no file at {rel})")
+    return errors
+
+
+def check_duplicate_descriptions(skill_dirs: list[Path]) -> list[str]:
+    """No two skills may share the same description (whitespace-normalized)."""
+    errors: list[str] = []
+    seen: dict[str, str] = {}
+    for skill_dir in skill_dirs:
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.is_file():
+            continue
+        meta, _body, err = parse_skill(skill_md)
+        if err or not isinstance(meta, dict):
+            continue
+        desc = str(meta.get("description", "")).strip().lower()
+        if not desc:
+            continue
+        norm = re.sub(r"\s+", " ", desc)
+        if norm in seen:
+            errors.append(
+                f"duplicate description: '{skill_dir.name}' and '{seen[norm]}' "
+                "share the same description"
+            )
+        else:
+            seen[norm] = skill_dir.name
     return errors
 
 
@@ -178,6 +262,7 @@ def collect_errors() -> tuple[list[str], int]:
     errors: list[str] = []
     for skill_dir in skill_dirs:
         errors.extend(check_skill(skill_dir, all_names))
+    errors.extend(check_duplicate_descriptions(skill_dirs))
     errors.extend(check_catalog(all_names))
     return errors, len(skill_dirs)
 
