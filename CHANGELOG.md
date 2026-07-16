@@ -6,12 +6,22 @@ All notable changes to nanolama are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `BACKLOG.md` — five researched, scoped candidates (`secure-file-ingestion`,
+  `postgres-query-planning`, `bulk-import-pipeline`, `slo-error-budgets`,
+  `load-capacity-testing`) recorded as a **validated backlog, not a release plan**, with
+  the evidence gate that keeps them out until real usage justifies them. The catalogue
+  deliberately holds at **45**.
+
 ### Changed
 
 - CI pins the official validator to `@anthropic-ai/claude-code@2.1.211` instead of
   `@latest`. The GitHub Actions were already SHA-pinned for exactly this reason, so a
   floating npm tag was an inconsistency — that package publishes very frequently, and an
   upstream release could have reddened an unrelated PR. Bump it deliberately after testing.
+- `CONTRIBUTING.md` states the gate for new skills: research establishes candidate
+  quality, usage establishes product necessity.
 
 ## [0.3.0] - 2026-07-16
 

@@ -84,3 +84,18 @@ Never paste code or commands you have not vetted.
 - Small and single-purpose; cross-reference siblings instead of duplicating them.
 - Green `validate_skills.py`, `--check` README, and `pytest` before you open a PR.
 - A skill earns its place by being genuinely useful — don't add one to inflate the count.
+
+## Before you add a skill
+
+> **Add a skill only when the missing workflow appears repeatedly in real work and
+> cannot be cleanly handled by an existing skill.**
+
+Research establishes candidate *quality*; usage establishes product *necessity*. A skill
+is not free — its `description` competes in the same trigger space as every other skill,
+so each addition slightly degrades the predictability of the ones that already work.
+"It would be useful" is not the bar; "this came up repeatedly and nothing owns it" is.
+
+If it does earn a place and the topic currently lives inside a bigger skill, **take
+ownership and trim the old host to a pointer** — never leave two skills teaching the same
+thing, or they compete for the same prompt. See [BACKLOG.md](BACKLOG.md) for the
+validated-but-not-yet-needed candidates and the evidence we would want first.
