@@ -1,0 +1,40 @@
+# --- Python (skill-validation tooling) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# --- Node (optional tooling / docs) ---
+node_modules/
+.pnpm-store/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# --- Env / secrets (never commit) ---
+.env
+.env.*
+!.env.example
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editors ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*~
+
+# --- Claude Code: keep shared settings.json, ignore personal/local overrides ---
+.claude/settings.local.json

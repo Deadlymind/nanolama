@@ -1,0 +1,21 @@
+{
+  "name": "nanolama-marketplace",
+  "owner": {
+    "name": "nanolama contributors"
+  },
+  "description": "Skills library for a fixed Django 5.2 / DRF 3.16 + Next.js 16 / React 19 production stack, tenant-isolation and security first.",
+  "plugins": [
+    {
+      "name": "nanolama",
+      "source": "./",
+      "description": "Production-grade skills for the fixed Django + Next.js stack (multi-tenant, security-first).",
+      "category": "development",
+      "keywords": [
+        "django",
+        "nextjs",
+        "multi-tenant",
+        "skills"
+      ]
+    }
+  ]
+}

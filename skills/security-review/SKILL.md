@@ -1,0 +1,77 @@
+---
+name: security-review
+description: Audits a diff for this stack's top risks — tenant isolation on every business queryset (fail-closed, no client-supplied tenant id trusted), RBAC on every custom endpoint and @action, PII leakage in list endpoints/logs/exports, file-upload validation (content-type, size, extension, private storage), and secrets not committed. Use when reviewing a Django/DRF change before merge, auditing a new ViewSet or upload handler, checking a PR for security issues, or asked "is this safe to ship". Findings are confidence-gated. Run only on TRUSTED diffs — not hardened against prompt injection. Not for generic correctness/quality review (see code-review) or proving behavior works (see verify).
+---
+
+# Security review (audit changes for top risks)
+
+## When to use
+Reviewing a diff before merge on this stack, especially one that touches a
+ViewSet, a custom `@action`, a serializer, an upload handler, an export, or
+logging. Focus on the handful of risks that actually bite this architecture,
+not a generic OWASP recital.
+
+> **CAUTION — trusted diffs only.** This skill reads code and follows its intent.
+> It is *not* hardened against prompt injection. Do not run it on untrusted or
+> attacker-controlled diffs; a hostile comment or string could steer the review.
+
+## Pattern
+Walk the diff against a fixed checklist, and gate every finding by confidence:
+report **Confirmed** (you can point at the vulnerable line and the exploit),
+**Likely** (pattern is present but the sink is one hop away), or **Question**
+(needs the author to confirm). Never pad the report with speculative low-signal
+noise — a fail-closed tenant leak outranks a style nit by orders of magnitude.
+
+## The checklist
+1. **Tenant isolation.** Every business queryset scoped by the tenant FK
+   (`entreprise`) and **fail-closed** — no tenant resolves to `.none()`, never all
+   rows. The tenant comes from `request.user`, never from a body/query param. Flag
+   any raw `Model.objects.get/filter(...)` in a view that bypasses the scoped
+   queryset, and any `@action` that re-queries without scoping (see `multi-tenancy`).
+2. **RBAC.** Every custom endpoint and every `@action` carries an explicit
+   permission — no endpoint relies on "logged in" alone. A new action without a
+   `{resource}_{action}` gate is a finding (see `rbac-permissions`).
+3. **PII leakage.** List/export serializers must not spill emails, phones, tokens,
+   or internal ids beyond what the screen needs; logs and error payloads must not
+   echo request bodies or secrets.
+4. **File uploads.** Validate content-type **and** extension **and** size; store to
+   **private** storage (never a public-read S3 ACL); never trust the client filename.
+5. **Secrets.** No keys, tokens, or `.env` values in the diff — config comes from
+   the environment. Watch AI/search keys especially (see `ai-integration`).
+
+## Idioms — what a real finding looks like
+```python
+# CONFIRMED — cross-tenant leak plus an unsafe upload, both attacker-reachable.
+@action(detail=False, methods=["post"])
+def bulk_send(self, request):
+    ids = request.data["invoice_ids"]
+    qs = Invoice.objects.filter(id__in=ids)                 # BUG: not tenant-scoped
+    # fix: qs = self.get_queryset().filter(id__in=ids)      # reuse fail-closed scope
+
+    f = request.FILES["doc"]
+    if f.content_type == "application/pdf":                 # BUG: spoofable header only
+        default_storage.save(f.name, f)                     # public bucket + raw name
+    # fix: check f.size, whitelist the extension, sniff magic bytes, private storage
+    ...
+```
+
+## Adapt to your repo
+Rename `entreprise`/`Entreprise` and the tenant accessor (`user.entreprise_id` vs
+`user.profile.entreprise_id`) to match your project. Confirm where "logged in" is
+enforced globally so you can spot endpoints that *only* have that and nothing more.
+Know your storage default (public vs private bucket) before judging upload code.
+
+## Gotchas
+- Absence is the bug: a missing tenant filter or missing permission won't appear as
+  a red line — you must notice what *isn't* there. Diff-only review misses it; open
+  the whole changed view.
+- A 200 that returns another tenant's row is worse than a 500 — verify the fix
+  actually fails closed, don't just eyeball the filter (see `verify`).
+- Client-supplied `entreprise`/`tenant` ids, filenames, and content-types are all
+  attacker-controlled — never trusted, even when "the frontend sets it".
+- Rank by blast radius, not count. One confirmed cross-tenant leak beats ten nits.
+
+## See also
+- `multi-tenancy`
+- `rbac-permissions`
+- `ai-integration`

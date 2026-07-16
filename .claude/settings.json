@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/validate_skills.py)",
+      "Bash(python scripts/generate_readme.py:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(pytest:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(claude plugin validate:*)",
+      "PowerShell(python scripts/validate_skills.py)",
+      "PowerShell(python scripts/generate_readme.py:*)",
+      "PowerShell(python -m pytest:*)",
+      "PowerShell(git status:*)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)",
+      "PowerShell(git add:*)"
+    ]
+  }
+}

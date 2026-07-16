@@ -1,0 +1,4 @@
+# Tooling for validating and testing the nanolama skills library.
+# (nanolama ships no runtime code — these are only for contributors + CI.)
+PyYAML>=6,<7
+pytest>=8
