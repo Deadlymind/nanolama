@@ -88,9 +88,17 @@ only applies to browser fetches.
   else -> the list.
 - Validate response shapes at the fetcher boundary with Zod when the payload is
   untrusted or drifts (see `drf-zod-contract`).
+- **Security-critical: do authentication and tenant/authorization checks on the
+  server** — in a Server Component, route handler, or middleware — never in a Client
+  Component. Anything a `"use client"` component can read is attacker-visible, so
+  client-side gating is UX only, not a boundary (ties `rbac-permissions`). Keep
+  `"use client"` at interactive leaves; never put secrets or tenant-authorization
+  logic in client code. For a privileged operation, prefer a Server Action or a
+  server-side fetch over exposing the call (and any check guarding it) to the client.
 
 ## See also
 - `react-query`
+- `rbac-permissions`
 - `zod-forms`
 - `drf-zod-contract`
 - `i18n-rtl`

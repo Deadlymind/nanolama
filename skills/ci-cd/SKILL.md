@@ -73,6 +73,28 @@ protection so a red pipeline blocks merge instead of merely warning.
 4. **Audit dependencies in CI.** `pip-audit` (Python) and `pnpm audit --prod` (Node)
    flag known-vuln packages on every PR (see `dependency-audit`).
 
+## Security & hardening gates
+Add security checks as their own required jobs (GitHub Actions), each failing the build
+on **high severity** so a vuln can't merge:
+- **SAST.** Run `bandit -r . -ll` for Python, plus `semgrep` (or CodeQL) with the
+  Django/DRF and React rulesets for injection, XSS, and unsafe-deserialization patterns.
+- **Secret scan.** Run `gitleaks detect` over both the diff and history — a secret in an
+  old commit is still leaked. Fail on any finding, not just new ones.
+- **Deploy sanity.** Run `python manage.py check --deploy` to catch insecure settings
+  (`DEBUG`, weak `SECRET_KEY`, missing HSTS/cookie flags) before they ship.
+
+Then harden the workflow itself — the pipeline is attackable too:
+- **Pin actions to a commit SHA**, not a moving tag: `uses: actions/checkout@<40-char-sha>`.
+  A tag like `@v4` can be re-pointed at malicious code; a SHA can't.
+- **Least-privilege token.** Set `permissions: { contents: read }` at the workflow level
+  and widen per-job only where needed (e.g. `pull-requests: write` for a comment step).
+- **Bound and dedupe runs.** Give each job a `timeout-minutes:` so a hung step can't run
+  for hours, and add a top-level `concurrency: { group: ci-${{ github.ref }},
+  cancel-in-progress: true }` to cancel superseded runs on the same branch.
+
+Mark each security job a **required status check** in branch protection so it blocks
+merge — the same gate discipline as the test jobs (see `security-review`).
+
 ## Adapt to your repo
 Rename the frontend dir (`web`), the Postgres image tag (16/17/18 all run Django 5.2),
 and the Python/Node versions to match your project. If you use Poetry or uv, swap the
@@ -99,4 +121,5 @@ secrets — never commit them.
 - `write-tests`
 - `migrations`
 - `dependency-audit`
+- `security-review`
 - `version-check`

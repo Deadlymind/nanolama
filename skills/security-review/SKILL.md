@@ -71,6 +71,27 @@ def bulk_send(self, request):
     ...
 ```
 
+## OWASP quick-map
+The generic OWASP list only earns its keep when pinned to a real sink. Three that
+bite this stack, confidence-gated like everything else:
+- **SSRF (server-side request forgery).** Any *server-side* URL fetch in the AI /
+  OCR / RAG or webhook paths must validate the target against an **egress
+  allowlist** — never fetch a user- or model-supplied URL blindly. A model that
+  returns a link, or a webhook payload carrying a callback URL, is attacker
+  reachable; a blind `requests.get(url)` there can hit `169.254.169.254` or an
+  internal service. **Confirmed** when the fetched URL flows from request/model
+  data with no host check (see `webhook-handler`, `ai-integration`).
+- **Injection escape hatches.** The ORM parameterizes for you, so a plain
+  `.filter(...)` is safe — flag the code that *leaves* it: `.raw()`, `.extra()`,
+  `RawSQL(...)`, `cursor.execute(f"... {x}")`, or any string-built query. An id or
+  name interpolated into that string is SQL injection even though the surrounding
+  code "uses the ORM."
+- **Security headers.** Confirm Django `SECURE_*` settings — HSTS
+  (`SECURE_HSTS_SECONDS`), `SECURE_SSL_REDIRECT`, and `Secure`/`HttpOnly`/`SameSite`
+  session and CSRF cookies — plus a **Content-Security-Policy** on the frontend.
+  Missing HSTS or a permissive CSP is **Likely**, not Confirmed, unless you can show
+  the header is actually absent in a response.
+
 ## Adapt to your repo
 Rename `entreprise`/`Entreprise` and the tenant accessor (`user.entreprise_id` vs
 `user.profile.entreprise_id`) to match your project. Confirm where "logged in" is
@@ -91,5 +112,6 @@ Know your storage default (public vs private bucket) before judging upload code.
 - `multi-tenancy`
 - `rbac-permissions`
 - `ai-integration`
+- `webhook-handler`
 - `money-decimal`
 - `db-concurrency`
