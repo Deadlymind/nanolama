@@ -35,14 +35,20 @@ Correction required:
 
 What that log is looking for, and what each finding actually implies:
 
-- **no skill activates** → a possible gap (the only thing that promotes a backlog candidate);
-- **a skill activates but its guidance runs out** → enrich the owner, do **not** add a skill;
-- **two skills always activate together** → a merge, or a missing owner between them;
-- **a correction right after activation** → a `description` that over-triggers;
-- **the domain barely recurs** → leave it in this backlog, however good the candidate is.
+| Finding | What it means |
+| --- | --- |
+| **no skill activates** | a possible unowned gap — a new skill is on the table |
+| **the wrong skill activates** | fix the `description`; the catalogue is fine |
+| **guidance runs out** | **enrich the owner first** — split only if the missing workflow has its own distinct trigger, output and ownership boundary |
+| **two skills always co-activate** | merge them or clarify the boundary; a new owner only when neither can cleanly own the workflow |
+| **the domain barely recurs** | leave it here, however good the candidate is |
 
-Note the asymmetry: only the first of those justifies a new skill. The others are reasons
-to *fix* the 45, which is cheaper and keeps the trigger space clean.
+Default to fixing the 45: it is cheaper and keeps the trigger space clean. But "enrich,
+never split" would be too strict — and would contradict this library's own history. The
+0.3.0 carve-outs (`cookie-auth-csrf`, `tenant-session-switch`, `browser-e2e-testing`,
+`ai-evals`) all came from skills that **did** activate and **were** overloaded, not from
+silence. A repeatedly-incomplete workflow is real evidence; it just has to clear the
+distinct-trigger / distinct-output / distinct-owner bar before it earns a skill of its own.
 
 ## Candidates, prioritised
 
@@ -117,8 +123,10 @@ derived from SLOs, and stop conditions so a test cannot damage shared infrastruc
 
 Candidate research drew on OWASP (File Upload, CSV Injection), the PostgreSQL manual
 (`pg_stat_statements`, `EXPLAIN`, `CREATE INDEX`), Google SRE (Implementing SLOs), and
-the DRF throttling docs — plus two peer-reviewed studies of the skills ecosystem, both
-verified to exist before being relied on:
+the DRF throttling docs — plus two empirical studies of the skills ecosystem published on
+arXiv. Both are **preprints, not peer-reviewed work**: their existence and content were
+verified before being relied on, which is a weaker claim than review, so weight them
+accordingly.
 
 - *From Registry to Repository: How AI Agent Skills Are Written, Adapted, and Maintained* — <https://arxiv.org/abs/2607.00911>
 - *Under the Hood of SKILL.md: Semantic Supply-chain Attacks on AI Agent Skill Registry* — <https://arxiv.org/abs/2605.11418>
