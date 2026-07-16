@@ -43,12 +43,24 @@ rather than loading one giant queryset.
 
    def unset_slug(apps, schema_editor):
        Invoice = apps.get_model("billing", "Invoice")
-       Invoice.objects.update(slug="")  # real reverse, not a guess
+       # reverse ONLY the rows this migration generated; leave pre-existing slugs alone.
+       # An unconditional .update(slug="") would destroy slugs the forward step never wrote.
+       for ent_id in Invoice.objects.values_list("entreprise_id", flat=True).distinct():
+           qs = Invoice.objects.filter(entreprise_id=ent_id).exclude(slug="")
+           for inv in qs.iterator(chunk_size=500):
+               if inv.slug == f"inv-{inv.pk}":     # our value, not the user's
+                   inv.slug = ""
+                   inv.save(update_fields=["slug"])
 
    class Migration(migrations.Migration):
        dependencies = [("billing", "0007_invoice_slug")]
        operations = [migrations.RunPython(backfill_slug, unset_slug)]
    ```
+
+   A reverse must undo only what the forward step did. If the generated value is not
+   recognisable, do not guess — declare it: `migrations.RunPython(backfill_slug,
+   migrations.RunPython.noop)  # intentionally irreversible: cannot distinguish
+   generated slugs from pre-existing ones`.
 
 2. **Split schema from data.** One migration adds the nullable/blank column; a
    separate `RunPython` backfills; a later migration adds `NOT NULL`/constraints.
@@ -82,6 +94,12 @@ or `celery-task` and keep the migration to schema only.
   when the migration replays against old state — always `apps.get_model`.
 - A `RunPython` with no reverse blocks `migrate` from rolling back; pass
   `RunPython.noop` when the change genuinely cannot be undone.
+- A reverse that is broader than its forward is data loss, not a rollback. If the
+  forward only touched unset rows, the reverse must only reset rows it generated —
+  an unconditional `Model.objects.update(field="")` wipes values that predate the
+  migration, across every tenant, and no error is raised. When you cannot tell your
+  value from the user's, `RunPython.noop` plus an explicit "intentionally
+  irreversible" comment is the honest reverse.
 - `CREATE INDEX CONCURRENTLY` fails inside a transaction — it needs `atomic = False`,
   and a failed concurrent index leaves an `INVALID` index you must drop by hand.
 - Adding a `NOT NULL` column with a default on a big table rewrites it under a lock;

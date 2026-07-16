@@ -60,7 +60,7 @@ skills:
     blurb: "Receive inbound webhooks safely: verify signature, dedupe by event id, resolve tenant, ack then enqueue."
   - name: audit-logging
     category: backend
-    blurb: "Append-only, tamper-evident audit trail of auth, RBAC and data-access events, tenant-scoped."
+    blurb: "Append-only, tenant-scoped audit trail of auth, RBAC and data-access events."
 
   # --- Frontend / Next.js ---
   - name: nextjs-module

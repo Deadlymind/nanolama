@@ -1,9 +1,9 @@
 ---
 name: audit-logging
-description: Records a tamper-evident audit trail of security-relevant actions in an append-only, tenant-scoped AuditLog model — actor, action, target, timestamp, ip/user-agent, and a REDACTED before/after diff — written in the same transaction as the action and made immutable at the DB. Use when logging auth events (login/logout/failed-login), RBAC role or permission changes, tenant-data exports, or destructive admin actions, adding an AuditLog model, enforcing retention or immutability, or asked how to prove who did what to which row. Not for ops telemetry, metrics, or traces — that is observability — and not for role gating itself (see rbac-permissions).
+description: Records an append-only, tenant-scoped audit trail of security-relevant actions in an AuditLog model — actor, action, target, timestamp, ip/user-agent, and a REDACTED before/after diff — written in the same transaction as the action and made append-only at the DB by revoking UPDATE/DELETE. Use when logging auth events (login/logout/failed-login), RBAC role or permission changes, tenant-data exports, or destructive admin actions, adding an AuditLog model, enforcing retention or immutability, or asked how to prove who did what to which row. Not for ops telemetry, metrics, or traces — that is observability — and not for role gating itself (see rbac-permissions).
 ---
 
-# Audit logging (tamper-evident security record)
+# Audit logging (append-only security record)
 
 ## When to use
 You need a durable, queryable answer to "who did what, to which row, when, from
@@ -19,8 +19,7 @@ security-relevant actions. Three invariants make it trustworthy:
    forbids it (revoke `UPDATE`/`DELETE`, or a rejecting trigger). A trail an admin
    can quietly rewrite proves nothing.
 2. **Atomic with the action.** The audit row is written in the **same transaction**
-   as the change it describes (or via `transaction.on_commit`). If the action rolls
-   back, so does its record — the trail can never drift from reality.
+   as the change it describes. If the action rolls back, so does its record.
 3. **Redacted at write time.** Passwords, tokens, secrets, and full PII are stripped
    *before* the diff is persisted. The log records that a field changed, not its
    secret value.
@@ -45,8 +44,9 @@ for anonymous failed logins), `action` (a stable verb like `role.granted`), the
 ```python
 # audit/models.py
 class AuditLog(models.Model):
-    entreprise = models.ForeignKey("tenants.Entreprise", on_delete=models.PROTECT,
-                                   related_name="audit_logs")           # tenant-scoped
+    entreprise = models.ForeignKey("tenants.Entreprise", null=True, blank=True,
+                                   on_delete=models.PROTECT,
+                                   related_name="audit_logs")   # null: pre-auth event
     actor      = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, # null: failed login
                                    on_delete=models.SET_NULL)
     action     = models.CharField(max_length=64)                        # "auth.login_failed"
@@ -68,12 +68,18 @@ class AuditLog(models.Model):
 
 SECRET_KEYS = {"password", "token", "secret", "authorization", "ssn"}
 
-def record(*, request, action, target=None, before=None, after=None):
+def record(*, request, action, actor=None, entreprise=None, target=None,
+           before=None, after=None):
     def _redact(d):  # never persist secret values
         return {k: ("***" if k.lower() in SECRET_KEYS else v) for k, v in (d or {}).items()}
+    user = getattr(request, "user", None)
+    if actor is None and user is not None and user.is_authenticated:
+        actor = user                      # anonymous (failed login) stays None
+    if entreprise is None:
+        entreprise = getattr(actor, "entreprise", None)  # may stay None: pre-auth event
     # runs inside the caller's transaction.atomic() — commits/rolls back with the action
     AuditLog.objects.create(
-        entreprise=request.user.entreprise, actor=request.user,
+        entreprise=entreprise, actor=actor,
         action=action,
         target_ct=ContentType.objects.get_for_model(target) if target else None,
         target_id=str(getattr(target, "pk", "")),
@@ -85,10 +91,12 @@ def record(*, request, action, target=None, before=None, after=None):
 
 Call `record(...)` from inside the same `transaction.atomic()` block as the action
 (e.g. right after `serializer.save()` in `perform_update`). For failed logins there
-is no authenticated user — pass `actor=None` and resolve the tenant from the
-submitted identifier if you can, else leave it unscoped-but-logged.
+is no authenticated user — `record()` leaves `actor` None for an `AnonymousUser`.
+Pass `entreprise=` explicitly if you can resolve the tenant from the submitted
+identifier; otherwise the row is written unscoped-but-logged (hence the nullable
+tenant FK).
 
-## Enforcing immutability at the DB
+## Enforcing append-only at the DB
 The `save()` guard stops honest bugs; a real audit trail also needs the database to
 refuse rewrites, so a compromised app account cannot alter history. In a migration,
 run raw SQL to `REVOKE UPDATE, DELETE ON audit_auditlog FROM <app_role>`, or install
@@ -109,9 +117,19 @@ pattern — no exact table or role names are assumed.
   tenant-scoped and retained for years; ops telemetry (metrics, traces, request
   logs) is high-volume, short-lived, and lives in your APM. Do not conflate them or
   route audit rows into log shipping where they can be dropped or mutated.
+- **Append-only is not tamper-evident.** Revoking `UPDATE`/`DELETE` stops the *app
+  role* from rewriting history; it does not detect a privileged role inserting,
+  backdating, or reloading rows, nor an altered backup. If you must *prove* the trail
+  is unaltered, chain each row (`prev_hash`, `row_hash = sha256(prev_hash || canonical(row))`)
+  and/or ship rows to an append-only external sink — a WORM bucket with object lock,
+  or a signed periodic checkpoint. Optional hardening; claim only what you enforce.
 - **Write it in the transaction, not after the response.** A fire-and-forget log
-  after commit can silently fail and desync the trail. Same transaction, or
-  `transaction.on_commit` so it only lands if the action did.
+  after commit can silently fail and desync the trail. Prefer the same `atomic()`
+  block: a failed audit write then rolls the action back too. `transaction.on_commit`
+  is a *weaker* fallback — it correctly never fires for a rolled-back action, but it
+  runs in a new transaction after COMMIT, so if that insert fails the action is
+  already committed and the trail silently drifts. Use it only where the audit write
+  must not be able to abort the action, and alert on callback failures.
 - **Redact before persisting, not on read.** Once a secret is in the row, it has
   leaked; masking at display time is too late (see `security-review`).
 - **`on_delete=PROTECT`/`SET_NULL`, never `CASCADE`.** Deleting a user or tenant

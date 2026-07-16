@@ -44,7 +44,9 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, code):
-        await self.channel_layer.group_discard(self.group, self.channel_name)
+        group = getattr(self, "group", None)
+        if group:                                       # rejected sockets never joined one
+            await self.channel_layer.group_discard(group, self.channel_name)
 
     async def notify(self, event):                      # handler for {"type": "notify"}
         await self.send_json(event["payload"])
@@ -60,8 +62,12 @@ def emit_notification(invoice):
 
 Wire it in `asgi.py`: call `get_asgi_application()` first so apps load before routes are
 imported, then build a `ProtocolTypeRouter` with `"http"` mapped to that app and
-`"websocket"` mapped to your `JWTCookieMiddleware(URLRouter([...]))` routing
-`path("ws/notifications/", NotificationConsumer.as_asgi())`. Set `CHANNEL_LAYERS["default"]`
+`"websocket"` mapped to `AllowedHostsOriginValidator(JWTCookieMiddleware(URLRouter([...])))`
+routing `path("ws/notifications/", NotificationConsumer.as_asgi())` — the origin validator
+is mandatory, not optional: cookie auth is ambient, so without it any origin can open an
+authenticated socket (CSWSH). `AllowedHostsOriginValidator` reuses `settings.ALLOWED_HOSTS`;
+use `OriginValidator(app, ["https://app.example.com"])` when the browser origin differs from
+the API host. Set `CHANNEL_LAYERS["default"]`
 to `channels_redis.core.RedisChannelLayer` with a `hosts` entry pointing at Redis.
 
 ## Dev vs production
@@ -97,6 +103,11 @@ at your ElastiCache Redis in production, and keep the socket cookie in sync with
 your `simplejwt`/`dj-rest-auth` cookie name.
 
 ## Gotchas
+- **No `AllowedHostsOriginValidator` = CSWSH.** WebSockets are exempt from CORS and the
+  same-origin policy, so a cross-site page can handshake against your socket and the browser
+  attaches the HttpOnly auth cookie regardless of origin — the connection authenticates as
+  your user and reads the tenant's event stream. Always wrap the websocket branch; never rely
+  on `ALLOWED_HOSTS` alone (it only guards HTTP).
 - **No `transaction.on_commit` = race**: sending inside the transaction can reach the
   client before commit (or after a rollback) — always defer the send.
 - **Never build a group name from client input** — derive it from `scope["user"]`,

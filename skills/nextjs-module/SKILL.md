@@ -33,11 +33,22 @@ One vertical slice, top of stack unchanged from the client up:
 export class ApiError extends Error {
   constructor(public status: number, public detail: unknown) { super(`HTTP ${status}`); }
 }
+const UNSAFE = /^(POST|PUT|PATCH|DELETE)$/i;
+const csrfToken = () =>
+  decodeURIComponent(document.cookie.match(/(?:^|;\s*)csrftoken=([^;]*)/)?.[1] ?? "");
+
 export async function apiClient<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = init.method ?? "GET";
+  const isForm = init.body instanceof FormData;
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
     ...init,
-    credentials: "include",               // HttpOnly cookie rides along; never read the token in JS
-    headers: { "Content-Type": "application/json", "X-Entreprise": getTenantId(), ...init.headers },
+    credentials: "include",              // HttpOnly cookie rides along; never read the token in JS
+    headers: {
+      ...(isForm ? {} : { "Content-Type": "application/json" }), // let the browser set the multipart boundary
+      ...(UNSAFE.test(method) ? { "X-CSRFToken": csrfToken() } : {}), // cookie auth => CSRF-exposed
+      "X-Entreprise": getTenantId(),
+      ...init.headers,
+    },
   });
   if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
   return res.status === 204 ? (undefined as T) : res.json();   // empty body on 204/DELETE
@@ -46,12 +57,21 @@ export async function apiClient<T>(path: string, init: RequestInit = {}): Promis
 // lib/api/invoices.ts — typed fetchers are the only place a URL/verb appears
 export const getInvoices = () => apiClient<Invoice[]>("/api/invoices/");
 
-// query-keys — one factory so hooks and invalidation agree on keys
-export const invoiceKeys = { all: ["invoices"] as const, list: () => [...invoiceKeys.all, "list"] as const };
+// query-keys — one factory so hooks and invalidation agree on keys; tenant is IN the key
+export const invoiceKeys = {
+  all: (t: string) => ["tenant", t, "invoices"] as const,
+  list: (t: string) => [...invoiceKeys.all(t), "list"] as const,
+};
 
 // hooks — components import these, never the fetchers
-export const useInvoices = () =>
-  useQuery({ queryKey: invoiceKeys.list(), queryFn: getInvoices });
+export const useInvoices = () => {
+  const tenantId = useUI((s) => s.activeEntrepriseId);
+  return useQuery({
+    queryKey: invoiceKeys.list(tenantId),   // never share a cache entry across tenants
+    queryFn: getInvoices,
+    enabled: !!tenantId,
+  });
+};
 
 // app/invoices/page.tsx — declarative page reads hook state
 "use client";
@@ -72,8 +92,20 @@ Component, forward the incoming `cookie` header explicitly — `credentials: "in
 only applies to browser fetches.
 
 ## Gotchas
-- Never read the JWT in JS or put it in `localStorage`; it is an HttpOnly cookie, so
-  `credentials: "include"` is the whole auth story client-side.
+- Never read the JWT in JS or put it in `localStorage`; it is an HttpOnly cookie and
+  `credentials: "include"` sends it automatically. That is **not** the whole story:
+  cookie auth is CSRF-exposed, so every unsafe method (POST/PUT/PATCH/DELETE) must also
+  send `X-CSRFToken`, read from the deliberately non-HttpOnly `csrftoken` cookie. A 403
+  on write is this — never `@csrf_exempt` the endpoint to silence it.
+- Never hard-code `Content-Type: application/json` unconditionally. For a `FormData`
+  body you must omit the header entirely so the browser can set `multipart/form-data`
+  **with its generated boundary** — setting it by hand produces a body the server
+  cannot parse.
+- **Security-critical: the tenant belongs IN the query key, not only in the request
+  header.** Otherwise two tenants share one cache entry and a tenant switch serves the
+  previous tenant's rows. Scope keys under `["tenant", tenantId, ...]` and follow the
+  switch procedure in `react-query`. Client-side isolation is defence-in-depth, not the
+  boundary — the server still enforces it.
 - Cross-origin cookies need the backend CORS to allow credentials and the cookie to be
   `SameSite=None; Secure` — a silent 401 in prod is usually this, not your code.
 - Don't call `fetch` inside components or pages; that scatters auth/tenant/error logic

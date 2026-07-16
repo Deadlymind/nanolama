@@ -43,6 +43,10 @@ VALID_TAX_RATES = frozenset(map(Decimal, ["0", "0.10", "0.20"]))  # tune per jur
 
 def money(value) -> Decimal:
     """Round any intermediate to the currency scale with an explicit mode."""
+    if isinstance(value, float):
+        # a float has already lost precision; quantize would only hide it.
+        # Don't "fix" this with Decimal(str(value)) — that launders the error.
+        raise TypeError("money() rejects float — pass Decimal, int, or str")
     return Decimal(value).quantize(MONEY_SCALE, rounding=ROUND_HALF_UP)
 
 # stepwise chain: quantize the tax, THEN the fee — not once at the end
@@ -61,7 +65,10 @@ amount = models.DecimalField(max_digits=14, decimal_places=2)  # decimal_places 
 
 ## Gotchas
 - Never build a `Decimal` from a `float` literal — `Decimal(0.1)` carries the float's
-  error. Pass a string or int: `Decimal("0.1")`.
+  error. Pass a string or int: `Decimal("0.1")`. Enforce it at the boundary — `money()`
+  raises `TypeError` on a float rather than quantizing the error away. `quantize` hides
+  the drift for most values, so a laundered float is a latent cent-drift, not a loud
+  failure: `money(2.675)` would give `2.67` where `money(Decimal("2.675"))` gives `2.68`.
 - Pick the rounding mode deliberately and reuse it; `ROUND_HALF_UP` and
   `ROUND_HALF_EVEN` disagree on exact-half cases, and the choice is a policy, not a
   default. Whatever you pick, apply it consistently across every step.

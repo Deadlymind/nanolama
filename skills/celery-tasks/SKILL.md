@@ -21,13 +21,19 @@ Four rules, held on every task:
 3. **Retry transient failures only** with `autoretry_for` + `retry_backoff` + a finite
    `max_retries`; never blanket-retry a bug.
 4. **Make it idempotent.** At-least-once delivery means the body must be safe to run
-   twice — guard with a unique key or a status check before side effects.
+   twice — *claim* the work atomically (`select_for_update` plus a conditional state
+   transition, a conditional `UPDATE ... WHERE not_yet_done`, or a `unique` execution row)
+   before the side effect. A bare read-then-check status flag is not a guard: two workers
+   both read "not sent" and both deliver. For external calls, also pass a provider
+   idempotency key — a DB rollback cannot un-send an HTTP request.
 
 ## Steps / idioms
 ```python
 # billing/tasks.py
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
+from django.db import transaction
+from django.utils import timezone
 from billing.models import Invoice
 
 @shared_task(
@@ -42,14 +48,29 @@ from billing.models import Invoice
     acks_late=True,                     # re-queue if the worker dies mid-run
 )
 def send_invoice(self, invoice_id, entreprise_id):
-    # re-fetch tenant-scoped — the row may have changed since enqueue
-    invoice = Invoice.objects.get(pk=invoice_id, entreprise_id=entreprise_id)
-    if invoice.sent_at:                 # idempotency guard: already delivered
-        return "already-sent"
+    # Atomically CLAIM the work: lock the row, re-check the state under the lock, and
+    # transition it. A read-then-act `if invoice.sent_at` is NOT idempotency — two
+    # workers both read "not sent" and both deliver.
+    with transaction.atomic():
+        invoice = (
+            Invoice.objects.select_for_update()      # re-fetch tenant-scoped + locked
+            .get(pk=invoice_id, entreprise_id=entreprise_id)
+        )
+        if invoice.sent_at:                          # someone else claimed it
+            return "already-sent"
+        invoice.sent_at = timezone.now()             # conditional transition = the claim
+        invoice.save(update_fields=["sent_at"])
     try:
-        invoice.deliver()               # the real side effect
+        # Provider idempotency key: a DB rollback cannot un-send a completed HTTP call,
+        # so the *provider* must dedupe on a stable key derived from the row.
+        invoice.deliver(idempotency_key=f"invoice-{invoice_id}-send")
     except SoftTimeLimitExceeded:
         invoice.mark_stalled()          # clean up before the hard kill
+        raise
+    except ConnectionError:
+        Invoice.objects.filter(pk=invoice_id, entreprise_id=entreprise_id).update(
+            sent_at=None                # release the claim; the retry re-claims it
+        )
         raise
 
 # Enqueue with plain IDs, resolving the tenant server-side:
@@ -94,7 +115,8 @@ as this kind of resumable task — see `migrations` for the schema-change side.
 Rename `entreprise_id`, `Invoice`, and the app label to match your project. Confirm the
 task is loaded via autodiscovery (`app.autodiscover_tasks()`) so `@shared_task` registers.
 Tune `soft_time_limit`/`time_limit` to the slowest legitimate run, and pick an idempotency
-key that fits the work (a status flag, a `unique` dedupe row, or a Redis `SETNX` lock).
+key that fits the work (a `unique` dedupe row or a Redis `SETNX` lock; a status column only
+works when you flip it with a lock or a conditional UPDATE, not an if-check).
 For multi-tenant beat jobs, iterate your `Entreprise` rows and dispatch one subtask per
 tenant instead of scheduling a single global sweep.
 
@@ -110,7 +132,11 @@ tenant instead of scheduling a single global sweep.
   ones. Connect `django.db.close_old_connections` to the `task_prerun`/`task_postrun`
   signals (and to beat startup) in your Celery config so each task cleans up its own.
 - `acks_late=True` gives at-least-once delivery, so the idempotency guard is mandatory,
-  not optional — without it a redelivered message double-charges or double-sends.
+  not optional — without it a redelivered message double-charges or double-sends. The guard
+  has to be an atomic *claim*, not a status check: `if invoice.sent_at: return` reads outside
+  any lock, so two concurrent workers both see "not sent" and both send. And once the external
+  call completes it cannot be undone by rolling back the transaction around it — pass a
+  provider idempotency key so the far side dedupes the second attempt.
 - Passing an ORM object serializes a stale copy and silently overwrites concurrent edits;
   re-fetch by id, and take a row lock if you mutate under contention (see `db-concurrency`).
 - A task that skips `entreprise_id` and filters nothing can leak or mutate across tenants —

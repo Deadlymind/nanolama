@@ -37,7 +37,11 @@ from django.db.models import F
 from rest_framework.exceptions import ValidationError
 
 def debit_account(account_id, amount: Decimal, entreprise):
+    if not amount.is_finite() or amount <= 0:           # reject NaN/Inf and non-positive input:
+        raise ValidationError("Amount must be a positive number")  # a negative debit CREDITS
     amount = amount.quantize(Decimal("0.01"))          # money = Decimal, fixed scale
+    if amount <= 0:                                     # e.g. 0.004 rounds to 0.00
+        raise ValidationError("Amount rounds to zero at the currency scale")
     with transaction.atomic():                          # one short, committed unit
         account = (
             Account.objects
@@ -70,6 +74,10 @@ Confirm the money column is `DecimalField(max_digits=…, decimal_places=…)`, 
 - `.get()` after `select_for_update()` — never read the row unlocked first, then lock;
   the first read is stale by the time you lock.
 - A check done *before* `select_for_update()` proves nothing; re-read and re-check after.
+- Validate the *input* (amount > 0, finite) before opening the transaction, and the
+  *state* invariant (sufficient balance) after locking — a negative amount turns a
+  debit into a credit, and no row lock will catch it. `balance < amount` is False for
+  a negative amount, so the guard passes and `balance -= amount` adds money.
 - `select_for_update(skip_locked=True)` / `nowait=True` are for queue-style claiming,
   not for balances — a skipped row means the update never happened.
 - Long transactions block other writers and exhaust connections — never call an
