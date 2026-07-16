@@ -6,6 +6,13 @@ All notable changes to nanolama are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- CI pins the official validator to `@anthropic-ai/claude-code@2.1.211` instead of
+  `@latest`. The GitHub Actions were already SHA-pinned for exactly this reason, so a
+  floating npm tag was an inconsistency — that package publishes very frequently, and an
+  upstream release could have reddened an unrelated PR. Bump it deliberately after testing.
+
 ## [0.3.0] - 2026-07-16
 
 Six focused skills (**39 → 45**), added only after the 0.2.1 correctness patch landed —

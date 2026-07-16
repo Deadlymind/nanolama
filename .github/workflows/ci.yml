@@ -36,8 +36,12 @@ jobs:
       - name: Validate skills (frontmatter, naming, cross-refs, catalog sync)
         run: python scripts/validate_skills.py
 
+      # Pinned, not @latest — same reason the actions above are pinned to a SHA.
+      # This package publishes very frequently, so a floating tag lets an upstream
+      # release break validation on an unrelated PR. Bump deliberately after testing:
+      #   npm view @anthropic-ai/claude-code version
       - name: Validate the plugin manifest (official Claude Code validator)
-        run: npx --yes @anthropic-ai/claude-code@latest plugin validate . --strict
+        run: npx --yes @anthropic-ai/claude-code@2.1.211 plugin validate . --strict
 
       - name: Check README is generated from the catalog
         run: python scripts/generate_readme.py --check
