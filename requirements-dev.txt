@@ -2,3 +2,4 @@
 # (nanolama ships no runtime code — these are only for contributors + CI.)
 PyYAML>=6,<7
 pytest>=8
+ruff>=0.6

@@ -8,7 +8,8 @@ For every skill under ``skills/<name>/SKILL.md`` this checks:
     spec (<=64 chars, ``[a-z0-9-]``, no reserved words ``anthropic``/``claude``);
   * ``description`` present, 40-1024 chars, third person, carrying a
     ``Use when ...`` trigger clause, no XML tags, and unique across skills;
-  * only portable frontmatter fields are used, and ``allowed-tools`` /
+  * only known frontmatter fields are used (Agent Skills standard + Claude Code
+    extensions), and ``allowed-tools`` /
     ``disallowed-tools`` (if present) are a string or a list of strings;
   * the body is non-trivial and contains the house section headings IN ORDER;
   * every ``backticked`` cross-reference under ``## See also`` names a real skill;
@@ -53,12 +54,20 @@ DESCRIPTION_MAX = 1024
 DESCRIPTION_MIN = 40
 BODY_MIN = 200
 
-# Frontmatter fields that are portable across every Skills surface (API,
-# claude.ai, Claude Code). Anything else risks silently not working somewhere.
-ALLOWED_FIELDS = {
+# Portable across every Skills surface (API, claude.ai, Claude Code).
+PORTABLE_FIELDS = {
     "name", "description", "license", "allowed-tools",
     "disallowed-tools", "metadata", "compatibility",
 }
+# Claude Code extensions to the Agent Skills standard, documented at
+# https://code.claude.com/docs/en/skills#frontmatter-reference. nanolama ships as a
+# Claude Code plugin; other surfaces ignore these rather than erroring on them.
+CLAUDE_CODE_FIELDS = {
+    "when_to_use", "argument-hint", "arguments", "disable-model-invocation",
+    "user-invocable", "model", "effort", "context", "agent", "hooks",
+    "paths", "shell",
+}
+ALLOWED_FIELDS = PORTABLE_FIELDS | CLAUDE_CODE_FIELDS
 TOOL_LIST_FIELDS = ("allowed-tools", "disallowed-tools")
 
 # House sections every nanolama skill must carry, in this order.

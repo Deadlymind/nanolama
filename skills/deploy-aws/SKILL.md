@@ -1,6 +1,7 @@
 ---
 name: deploy-aws
 description: Deploy runbook for this stack's Django/DRF backend on AWS Elastic Beanstalk (Gunicorn for WSGI, Uvicorn for the Channels ASGI app via Procfile, .ebextensions, leader_only migrate) and the Next.js frontend on Amplify (amplify.yml, pinned pnpm, env vars). Use when shipping a release, writing a Procfile or amplify.yml, running eb deploy, wiring container_commands, rolling back to a prior version label, or checking GET /health after a deploy. Not for provisioning RDS/ElastiCache/S3 (see aws-services) or the GitHub Actions pipeline (see ci-cd).
+disable-model-invocation: true
 ---
 
 # Deploy to AWS (Elastic Beanstalk + Amplify)
@@ -61,7 +62,10 @@ run websockets, ensure the load balancer forwards the `asgi` port and upgrades.
 
 ## Gotchas
 - **Ask before deploying.** A deploy is a side-effecting, prod-facing action —
-  confirm the target env and the release with the user first.
+  confirm the target env and the release with the user first. This skill carries
+  `disable-model-invocation: true`, so it is **manual-only**: you load it by running
+  `/nanolama:deploy-aws`, and Claude cannot pull it in and decide to deploy because
+  the code looks ready. Keep that field if you copy this runbook.
 - Without `leader_only: true`, every instance runs `migrate` simultaneously and
   they race on locks — one leader only (see `migrations`).
 - Uvicorn is a production ASGI server but is **not** bundled with Channels; wire

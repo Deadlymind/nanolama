@@ -17,6 +17,7 @@ cross-check the vendor page (djangoproject.com/download, nodejs.org) — see SKI
 from __future__ import annotations
 
 import json
+import sys
 import urllib.request
 
 TIMEOUT = 10  # seconds; these are small JSON docs
@@ -56,25 +57,32 @@ def npm_version(pkg: str) -> str:
     return _get(f"https://registry.npmjs.org/{pkg}/latest")["version"]
 
 
-def _row(label: str, width: int, fn) -> None:
+def _row(label: str, width: int, fn) -> bool:
+    """Print one row. Returns True on success, False on a fetch/parse error."""
     try:
         print(f"  {label:<{width}} {fn()}")
-    except Exception as exc:  # network/parse errors must not abort the whole run
+        return True
+    except Exception as exc:  # one dead source must not abort the whole run
         print(f"  {label:<{width}} ERROR ({exc})")
+        return False
 
 
 def main() -> int:
+    failures = 0
     print("Live version check - 'latest' is not 'LTS' is not 'supported'. Verify LTS on vendor pages.\n")
     print("== Support / EOL (endoflife.date; newest cycle first) ==")
     for product in EOL_PRODUCTS:
-        _row(product, 14, lambda p=product: eol_summary(p))
+        failures += not _row(product, 14, lambda p=product: eol_summary(p))
     print("\n== Python packages (PyPI latest) ==")
     for pkg in PYPI_PKGS:
-        _row(pkg, 34, lambda p=pkg: pypi_version(p))
+        failures += not _row(pkg, 34, lambda p=pkg: pypi_version(p))
     print("\n== npm packages (registry latest) ==")
     for pkg in NPM_PKGS:
-        _row(pkg, 26, lambda p=pkg: npm_version(p))
+        failures += not _row(pkg, 26, lambda p=pkg: npm_version(p))
     print("\nDjango LTS: djangoproject.com/download  |  Node LTS: nodejs.org  |  AWS runtimes lag upstream.")
+    if failures:
+        print(f"\n{failures} lookup(s) failed - version data is incomplete.", file=sys.stderr)
+        return 1
     return 0
 
 

@@ -10,7 +10,7 @@ Every skill lives at `skills/<name>/SKILL.md` and is checked by
 `scripts/validate_skills.py` (also run in CI). The [`skill-authoring`](skills/skill-authoring/SKILL.md)
 skill walks through it interactively; the rules:
 
-### Frontmatter — exactly two fields
+### Frontmatter — two required fields
 
 ```yaml
 ---
@@ -18,6 +18,12 @@ name: your-skill-name
 description: <third person>. Use when <triggers>. Not for <sibling scope>.
 ---
 ```
+
+Those two are required and are all most skills need. Optional, if a skill genuinely
+needs them: `license` (defaults to the repo MIT LICENSE), `allowed-tools`,
+`disallowed-tools`, `metadata`, `compatibility`, plus the Claude Code fields
+(`disable-model-invocation`, `when_to_use`, `context`, …). `validate_skills.py`
+rejects any field outside that set.
 
 - **`name`** — must equal the directory name; only `[a-z0-9-]`; ≤ 64 chars; must **not**
   contain the reserved words `claude` or `anthropic`.
