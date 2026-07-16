@@ -38,6 +38,10 @@ All notable changes to nanolama are documented here. The format is based on
 
 ### Changed
 
+- CI's pinned actions move off the deprecated Node 20 runtime: `actions/checkout`
+  v4 → v7.0.0 (`9c091bb`) and `actions/setup-python` v5 → v6.3.0 (`ece7cb0`), both
+  running on node24. Full-SHA pinning, least-privilege `permissions`, concurrency
+  cancellation, the 10-minute timeout and Python 3.12 are unchanged.
 - Documentation and metadata now describe the 49-skill scope without touching any
   skill content: BACKLOG.md's two stale current-state references to "the 45" became
   future-proof wording (historical 45 references are preserved), and the README
