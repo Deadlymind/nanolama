@@ -1,7 +1,7 @@
 {
   "name": "nanolama",
   "displayName": "nanolama",
-  "description": "Production-grade Claude Code skills for a fixed Django 5.2 + Next.js 16 stack: multi-tenant DRF, cookie JWT, Celery, Channels, TanStack Query, Zod 4, next-intl RTL, AWS deploy, plus code-review, security, testing and debugging discipline.",
+  "description": "Production-grade Claude Code skills for multi-tenant Django 5.2 + Next.js 16 ERP and B2B SaaS: DRF, cookie JWT, Celery, Channels, TanStack Query, Zod 4, next-intl RTL, product UX, dashboards, design systems, AWS deploy, plus code-review, security, testing and debugging discipline.",
   "version": "0.3.0",
   "author": {
     "name": "nanolama contributors"
@@ -13,9 +13,14 @@
     "nextjs",
     "react",
     "multi-tenant",
+    "erp",
+    "b2b-saas",
     "celery",
     "channels",
     "tanstack-query",
+    "ui-ux",
+    "design-system",
+    "security",
     "aws",
     "skills"
   ]

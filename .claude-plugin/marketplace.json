@@ -3,17 +3,20 @@
   "owner": {
     "name": "nanolama contributors"
   },
-  "description": "Skills library for a fixed Django 5.2 / DRF 3.16 + Next.js 16 / React 19 production stack, tenant-isolation and security first.",
+  "description": "Skills library for a fixed Django 5.2 / DRF 3.16 + Next.js 16 / React 19 production stack — tenant isolation and security first, from backend, auth and async work to product UX, dashboards and design systems.",
   "plugins": [
     {
       "name": "nanolama",
       "source": "./",
-      "description": "Production-grade skills for the fixed Django + Next.js stack (multi-tenant, security-first).",
+      "description": "Production-grade skills for the fixed Django + Next.js stack — multi-tenant and security-first, from backend, auth and async work to product UX, dashboards, design systems, testing and AWS deploy.",
       "category": "development",
       "keywords": [
         "django",
         "nextjs",
         "multi-tenant",
+        "erp",
+        "design-system",
+        "security",
         "skills"
       ]
     }

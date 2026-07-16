@@ -18,7 +18,7 @@ are still not in the catalogue, on purpose.
 Growth before activation evidence is the failure this library exists to avoid. A skill
 is not free: its `description` competes in the same trigger space as all the others, and
 that space is where discovery actually happens — so every addition slightly degrades the
-predictability of the 45 that already work. "It would be useful" is not the bar.
+predictability of the skills already in the catalogue. "It would be useful" is not the bar.
 
 ## How the evidence gets gathered
 
@@ -48,7 +48,7 @@ What that log is looking for, and what each finding actually implies:
 | **two skills always co-activate** | merge them or clarify the boundary; a new owner only when neither can cleanly own the workflow |
 | **the domain barely recurs** | leave it here, however good the candidate is |
 
-Default to fixing the 45: it is cheaper and keeps the trigger space clean. But "enrich,
+Default to fixing the current catalogue: it is cheaper and keeps the trigger space clean. But "enrich,
 never split" would be too strict — and would contradict this library's own history. The
 0.3.0 carve-outs (`cookie-auth-csrf`, `tenant-session-switch`, `browser-e2e-testing`,
 `ai-evals`) all came from skills that **did** activate and **were** overloaded, not from

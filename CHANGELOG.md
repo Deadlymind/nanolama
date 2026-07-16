@@ -38,6 +38,11 @@ All notable changes to nanolama are documented here. The format is based on
 
 ### Changed
 
+- Documentation and metadata now describe the 49-skill scope without touching any
+  skill content: BACKLOG.md's two stale current-state references to "the 45" became
+  future-proof wording (historical 45 references are preserved), and the README
+  opening, `plugin.json` and `marketplace.json` descriptions/keywords now name the
+  product-UX / dashboard / design-system capability alongside the engineering stack.
 - De-duplicated design-space ownership so triggers stay predictable: `tailwind-shadcn`
   now **implements** the design system (its description no longer claims to *define* it)
   and hands token/variant/pattern decisions to `design-system`; `nextjs-module` hands

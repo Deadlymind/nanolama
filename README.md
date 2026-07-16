@@ -15,7 +15,8 @@
 **nanolama is a portable [Claude Code](https://code.claude.com) skills library — a
 plugin, not an application.** Install it and every session already knows how this
 house stack is built: multi-tenant Django/DRF, cookie JWT, Celery, Channels,
-Next.js/React Query/Zod, AWS, and the review / security / testing discipline that
+Next.js/React Query/Zod, AWS, the product-UX / dashboard / design-system practice
+that shapes its ERP screens, and the review / security / testing discipline that
 keeps it correct. The product *is* the curated catalog below.
 
 Every skill teaches a **reusable pattern plus an "adapt to your repo" note** — it is
