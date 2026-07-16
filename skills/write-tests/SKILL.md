@@ -75,6 +75,27 @@ encodes the behavior (`resp.json()["total"] == "12.500"`), not an exact HTML dum
 a huge JSON blob that breaks on any cosmetic change. Mock **only the boundary** — the
 outbound HTTP call, the clock — and run the real logic under test through it.
 
+## Async and UI tests
+- **Celery tasks** — run them synchronously with `CELERY_TASK_ALWAYS_EAGER = True`
+  so a `.delay()` executes inline and you assert its effect directly. Control time
+  (freeze the clock) to assert **retry/backoff** — a failing task reschedules with a
+  growing countdown — and **idempotency**: run the task twice on the same input and
+  confirm the second run is a no-op (no duplicate row, no double charge). Mock
+  external calls at the **boundary** (the outbound HTTP client, the payment SDK), not
+  the task body, so the real task logic runs through the mock (see `celery-tasks`).
+- **React components** — use a component-testing library with `user-event` (not raw
+  `fireEvent`) to test **form validation and submission** — a bad value shows the
+  error, a good one calls the mutation once. Cover all four TanStack Query states:
+  loading (skeleton), empty (no rows), error (retry visible), success (data renders).
+  Render under your locale provider to check translated strings and **RTL** direction
+  (`dir="rtl"`) so a mirrored layout doesn't regress silently.
+- **Top of the pyramid** — a *few* end-to-end browser tests (Playwright-style) of the
+  critical **cookie-JWT + CSRF + RBAC-gated** flows: log in, obtain the HttpOnly
+  cookie, send the CSRF header, and confirm a viewer is blocked where an admin passes.
+  Drive these with **tenant-scoped fixtures** so each run sees only its own tenant's
+  data. Keep the count small — they are slow and brittle; push detail down to the
+  unit and integration layers above.
+
 ## Adapt to your repo
 Rename `Entreprise`/`entreprise`, the perm codenames, the cookie name (`access` vs your
 `SIMPLE_JWT["AUTH_COOKIE"]`), and the fetch-client import path (`@/lib/api-client`) to
@@ -100,6 +121,7 @@ and run the suite against the same database engine as production so behavior mat
 
 ## See also
 - `multi-tenancy`
+- `celery-tasks`
 - `money-decimal`
 - `db-concurrency`
 - `verify`

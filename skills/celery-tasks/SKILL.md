@@ -66,6 +66,30 @@ CELERY_BEAT_SCHEDULE = {
 }
 ```
 
+## Resumable backfills / bulk jobs
+A one-shot task that loads every row of a large tenant's table into memory, then dies at
+80%, restarts from zero and re-does the work it already finished. Make big backfills and
+imports resumable instead:
+
+- **Chunk by a stable key range.** Walk `id` ranges (`id > last_id`, ordered, `LIMIT n`)
+  rather than `OFFSET` paging — offsets drift as rows change and re-scan earlier pages.
+- **Persist a checkpoint after each chunk.** Save the last processed `id` (cursor) to a
+  small progress row or Redis key, so a re-run reads the checkpoint and continues from
+  there, not from the start.
+- **Make each chunk idempotent.** A re-run of an already-done chunk must be a no-op — guard
+  each row with a status flag or `update_or_create`/`ON CONFLICT` upsert so redelivery or a
+  restart skips finished work.
+- **Bound memory.** Stream with `.values_list(..., flat=True)` or `.iterator(chunk_size=…)`
+  instead of materializing the full queryset; process one bounded chunk per pass.
+- **Record partial failure.** On a chunk error, log the failing range and re-raise so the
+  task retries from the last good checkpoint — total rows done / failed makes progress
+  observable and the job resumable rather than all-or-nothing.
+
+Dispatch one chunk per task (each re-enqueues the next range) or loop chunks inside a single
+long task that re-checkpoints between them. When the backfill accompanies a schema change
+(new column, backfilled default), keep the data backfill *out* of the migration and run it
+as this kind of resumable task — see `migrations` for the schema-change side.
+
 ## Adapt to your repo
 Rename `entreprise_id`, `Invoice`, and the app label to match your project. Confirm the
 task is loaded via autodiscovery (`app.autodiscover_tasks()`) so `@shared_task` registers.
@@ -95,6 +119,7 @@ tenant instead of scheduling a single global sweep.
   a small id/status, not the payload.
 
 ## See also
+- `migrations`
 - `db-concurrency`
 - `websockets-channels`
 - `deploy-aws`

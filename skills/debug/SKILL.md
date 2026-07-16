@@ -57,6 +57,28 @@ cache — not a caching bug to mask with `refetchInterval`. In the mutation's
 touches (the list key *and* the affected detail key), so both refetch. See
 `react-query` for the key-factory pattern.
 
+## Read-only Redis/Valkey + queue inspection
+When jobs are stuck or websocket events go missing, the stall is usually in the
+pipeline between producer and consumer — inspect the broker/cache **read-only** to
+see where it stops.
+- **Queue depth.** `LLEN <queue>` (default Celery queue is `celery`) — a growing
+  depth means tasks are enqueued but no worker is consuming; zero depth with no
+  result means they never enqueued.
+- **Reserved / active tasks.** `celery -A myproject inspect active` /
+  `reserved` / `stats` shows what each worker is holding — a task stuck "active"
+  for minutes is blocking a slot.
+- **Stuck / unacked messages.** With late-ack, a crashed worker leaves messages
+  unacked until its visibility timeout expires; look for the same task redelivered
+  in a loop.
+- **Channels group membership.** A missing websocket event usually means the
+  consumer never joined the group, or the sender used a different group name — check
+  the group key the code builds (e.g. `entreprise_{id}`) matches on both sides.
+
+**Absolute rule:** never mutate or flush prod broker/cache state while debugging — no
+`FLUSHALL`, `DEL`, `PURGE`, or requeue on a live system. That destroys the evidence and
+can drop real work. Observe, form a hypothesis, then fix in code. See `celery-tasks`
+and `websockets-channels`.
+
 ## Adapt to your repo
 Rename `Entreprise`/`entreprise`, `myproject.asgi`, and the query keys/routes to
 match your project. Confirm your actual log locations and the command that starts
@@ -86,3 +108,5 @@ each process (worker, Daphne/ASGI). Match query keys to your app's real key fact
 - `perf-review`
 - `react-query`
 - `incident-response`
+- `celery-tasks`
+- `websockets-channels`

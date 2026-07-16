@@ -58,6 +58,9 @@ skills:
   - name: webhook-handler
     category: backend
     blurb: "Receive inbound webhooks safely: verify signature, dedupe by event id, resolve tenant, ack then enqueue."
+  - name: audit-logging
+    category: backend
+    blurb: "Append-only, tamper-evident audit trail of auth, RBAC and data-access events, tenant-scoped."
 
   # --- Frontend / Next.js ---
   - name: nextjs-module
@@ -78,6 +81,12 @@ skills:
   - name: i18n-rtl
     category: frontend
     blurb: "next-intl fr/en/ar; every string via t(); logical CSS + Arabic RTL."
+  - name: accessibility
+    category: frontend
+    blurb: "WCAG 2.2 accessible React + shadcn/Radix UI: keyboard, focus, contrast, and RTL."
+  - name: frontend-perf
+    category: frontend
+    blurb: "Core Web Vitals (LCP/INP/CLS): bundle/code-split, RSC streaming, image/font, cache tuning."
 
   # --- Full-stack seam ---
   - name: drf-zod-contract
@@ -94,6 +103,12 @@ skills:
   - name: ci-cd
     category: infra
     blurb: "GitHub Actions gates: check, makemigrations --check, tests, lint, typecheck, build."
+  - name: observability
+    category: infra
+    blurb: "Structured logging, tracing, metrics + error tracking, tenant-correlated across DRF/Celery/Channels."
+  - name: production-readiness
+    category: infra
+    blurb: "Go-live checklist orchestrating health, secrets, migrations, monitoring, rollback and sign-off."
 
   # --- AI ---
   - name: ai-integration

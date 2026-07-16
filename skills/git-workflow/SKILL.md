@@ -45,6 +45,27 @@ protecting the shared branch.
 4. **Don't request review on red CI.** If you want early direction, open a **Draft PR**
    and say what feedback you're after; move it to Ready only once CI is green.
 
+## Resolving conflicts
+A three-way merge conflict means git couldn't reconcile two edits; resolve by intent,
+not by mechanically picking a side.
+
+- **Lockfiles are generated, not merged.** When `uv.lock` or `pnpm-lock.yaml` conflicts,
+  don't hand-edit the hashes — take the merged manifest (`pyproject.toml` /
+  `package.json`), then regenerate: `git checkout --theirs uv.lock && uv lock`, or
+  `git checkout --theirs pnpm-lock.yaml && pnpm install --lockfile-only`. A manually
+  stitched lockfile installs a set nobody resolved.
+- **Two migrations on one app** — each branch added a migration to the same Django app,
+  so both share a parent and the app has a branched history. Don't renumber by hand:
+  rebase onto latest `main`, then `python manage.py makemigrations --merge` to write a
+  tie migration that depends on both leaves. Rebasing first keeps the merge node last.
+- **Deleted-but-modified** — one side deleted a file the other side changed, and git
+  can't guess your intent. Decide deliberately: `git rm <file>` to honor the deletion,
+  or `git add <file>` to keep the modified version. Never let `git checkout --ours/--theirs`
+  silently drop the decision.
+
+After any resolution, re-run the build and tests before continuing the rebase — a clean
+`git status` only means the text merged, not that it works.
+
 ## Adapt to your repo
 Rename the shared branch if it isn't `main` (`master`, `develop`, a release branch).
 Match your host's push protection and the branch-name convention your team uses
@@ -69,3 +90,4 @@ consistent.
 - `commit-message`
 - `code-review`
 - `ci-cd`
+- `migrations`
