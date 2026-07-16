@@ -17,13 +17,32 @@ predictability of the 45 that already work. "It would be useful" is not the bar.
 
 ## How the evidence gets gathered
 
-Use the plugin on roughly **15–25 real Django/Next.js tasks** and record:
+Use the plugin on roughly **15–25 real Django/Next.js tasks**, ideally spanning what the
+catalogue claims to serve: a new DRF resource · tenant isolation + RBAC · a Next.js
+feature · a migration · a Celery task · authentication + CSRF · a file upload · an API
+performance problem · tests and browser E2E · a deploy / production-readiness pass.
 
-- prompts where **no** appropriate skill activates;
-- tasks where a skill activates but its guidance turns out **incomplete**;
-- skills that repeatedly activate **together** (signals a merge, or a missing owner);
-- **corrections** after a skill activates (signals a description that over-triggers);
-- whether these domains recur often enough to deserve an owner at all.
+Log five fields per task — deliberately few, because a heavier form just stops getting
+filled in:
+
+```text
+Task:
+Expected skill:
+Actually activated:
+Problem:   none | missed activation | wrong activation | incomplete guidance | competing skills
+Correction required:
+```
+
+What that log is looking for, and what each finding actually implies:
+
+- **no skill activates** → a possible gap (the only thing that promotes a backlog candidate);
+- **a skill activates but its guidance runs out** → enrich the owner, do **not** add a skill;
+- **two skills always activate together** → a merge, or a missing owner between them;
+- **a correction right after activation** → a `description` that over-triggers;
+- **the domain barely recurs** → leave it in this backlog, however good the candidate is.
+
+Note the asymmetry: only the first of those justifies a new skill. The others are reasons
+to *fix* the 45, which is cheaper and keeps the trigger space clean.
 
 ## Candidates, prioritised
 
@@ -77,10 +96,14 @@ derived from SLOs, and stop conditions so a test cannot damage shared infrastruc
 
 - **`privacy-data-lifecycle`** — blocked on a named jurisdiction and a product retention
   matrix. A skill must *implement* an approved policy, never invent one.
-- **`skill-supply-chain`** — the threat model targets *consumers* of third-party skills.
-  nanolama authors 100% of its content and vendors nothing; the controls that do apply
-  (pinned validator, recorded inspiration + licences) are already in place, and a control
-  that exists only as prose is not a control.
+- **`skill-supply-chain`** — nanolama *does* have a supply chain: npm (the pinned
+  validator), PyPI (PyYAML, pytest, ruff), GitHub Actions, and contribution integrity.
+  What it does not have is the **skill-import** surface those studies measure — it authors
+  100% of its content and vendors no external skill. So the controls that genuinely apply
+  are **repository** controls, and they are already in place: a pinned validator and
+  SHA-pinned actions, recorded inspiration + licences, and reviewed contributions. Another
+  skill description would add little on top of that — and a control that exists only as
+  prose is not a control.
 - **`skill-usage-audit`** — needs real session data; would start as a report script, not
   an auto-triggering skill.
 - **`disaster-recovery`** — `aws-services` + `production-readiness` already cover backups,
