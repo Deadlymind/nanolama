@@ -116,6 +116,9 @@ skills:
   - name: dependency-audit
     category: quality
     blurb: "Audit Python + JS deps for CVEs and drift: pip-audit, pnpm audit, lockfile hygiene."
+  - name: version-check
+    category: quality
+    blurb: "Deep-research the current stable/LTS version and support window before installing or pinning."
 
   # --- Workflow & Meta ---
   - name: commit-message

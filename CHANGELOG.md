@@ -6,6 +6,14 @@ All notable changes to nanolama are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- `version-check` skill — deep-research the current stable/LTS version and support
+  window (at today's date) before installing, pinning, or upgrading any stack
+  technology, with a dated 2026-07-16 snapshot (`reference/stack-versions-2026-07.md`)
+  and the re-verify-at-install method. Cross-referenced from `dependency-audit` and `ci-cd`.
+  Brings the library to **30 skills**.
+
 ## [0.1.0] - 2026-07-16
 
 ### Added

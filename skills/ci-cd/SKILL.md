@@ -99,3 +99,4 @@ secrets — never commit them.
 - `write-tests`
 - `migrations`
 - `dependency-audit`
+- `version-check`

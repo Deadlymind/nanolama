@@ -51,5 +51,6 @@ threshold your team enforces, and point the commands at your real lockfile paths
 - Accepting a finding without an expiry turns into a permanent silent risk — set a review date.
 
 ## See also
+- `version-check`
 - `security-review`
 - `ci-cd`
