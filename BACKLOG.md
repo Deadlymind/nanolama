@@ -1,7 +1,12 @@
 # Backlog — validated candidates, not a release plan
 
-nanolama **holds at 45 skills**. The candidates below are researched, scoped, and
-genuinely useful. They are still not in the catalogue, on purpose.
+nanolama **holds at 49 skills**. The hold sat at 45 until 2026-07-16, when four frontend
+design skills (`product-ux-design`, `visual-ui-design`, `dashboard-data-design`,
+`design-system`) were added as an **explicit owner-authorized product-scope expansion** —
+an owner decision to widen what the library covers, not an evidence-gate pass, and not a
+precedent. Future skills, including every candidate below, remain subject to the existing
+evidence gate. The candidates below are researched, scoped, and genuinely useful. They
+are still not in the catalogue, on purpose.
 
 > **Research establishes candidate *quality*. Usage establishes product *necessity*.**
 

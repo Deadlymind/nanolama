@@ -64,6 +64,32 @@ With gratitude to:
   Individual skills linked from that directory carry their own upstream licenses; we
   did not vendor any of them.
 
+## Design-guidance sources for the four design skills
+
+The `product-ux-design`, `visual-ui-design`, `dashboard-data-design` and `design-system`
+skills were written after consulting primary design sources. All guidance was restated
+in original wording — no text, code, layouts, or visual identity was copied — but two
+sources carry licenses that ask for attribution even of adaptations, and honesty asks
+for the rest to be named:
+
+- **GOV.UK Design System** — <https://design-system.service.gov.uk>, Crown copyright,
+  Open Government Licence v3.0. Form/error/review-page/task-list pattern thinking and
+  the evidence-gated contribution model informed `product-ux-design` and
+  `design-system`. Contains public sector information licensed under the Open
+  Government Licence v3.0.
+- **Material Design 3** — <https://m3.material.io>, Google, documentation text CC BY 4.0.
+  The token-tier concept, semantic color-role grammar, state and density guidance
+  informed `design-system` and `visual-ui-design` (adapted, not copied).
+- **W3C WCAG 2.2** and **WAI-ARIA Authoring Practices Guide** — cited as standards by
+  SC number and pattern name; no normative text reproduced.
+- **Apple Human Interface Guidelines** and **Microsoft Fluent 2** — consulted as
+  informative references for hierarchy, spacing, and density principles; restated, no
+  text copied (neither site's guidance text is openly licensed).
+- **Radix UI**, **shadcn/ui**, **Tailwind CSS**, **Next.js**, **React** documentation —
+  factual API and convention behavior restated for implementation-awareness; these
+  projects' docs are MIT/CC-BY-licensed and their conventions are already credited to
+  the implementation skills that own them.
+
 ---
 
 All third-party names and trademarks belong to their respective owners. If you believe

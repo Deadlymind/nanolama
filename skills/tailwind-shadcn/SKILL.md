@@ -1,14 +1,16 @@
 ---
 name: tailwind-shadcn
-description: Defines the design system on a Next.js 16 frontend — Tailwind v4 CSS-first theming with @theme and OKLCH CSS variables, semantic surface/-foreground token pairs, light plus .dark sets, and shared shadcn/ui components extended via cva. Use when adding or restyling a component, defining or renaming design tokens, wiring dark mode, picking colors or spacing, adding a button/badge variant, or asking how theming works here. Not for page/route structure or data fetching (see nextjs-module) or RTL and logical-property direction handling (see i18n-rtl).
+description: Implements the design system on a Next.js 16 frontend — Tailwind v4 CSS-first theming with @theme and OKLCH CSS variables, semantic surface/-foreground token pairs, light plus .dark sets, and shared shadcn/ui components extended via cva. Use when implementing an approved screen or component, adding or restyling a component, turning token roles into @theme CSS variables, wiring dark mode, coding a button/badge variant, or asking how theming works here. Not for deciding which tokens, component variants and patterns should exist — the system's definition and governance (see design-system), page/route structure or data fetching (see nextjs-module), or RTL and logical-property direction handling (see i18n-rtl).
 ---
 
-# Tailwind + shadcn/ui (the design system)
+# Tailwind + shadcn/ui (implementing the design system)
 
 ## When to use
-Styling anything on the frontend: adding a component, restyling one, defining a
+Styling anything on the frontend: adding a component, restyling one, coding a
 color or spacing token, wiring dark mode, or adding a variant. The rule of thumb —
 reach for a token and a shared component before writing raw CSS or a new one-off.
+Which roles, variants, and patterns should exist is decided upstream in
+`design-system`; this skill turns those decisions into working code.
 
 ## Pattern
 Two invariants:
@@ -67,5 +69,6 @@ scaffolded HSL variables, migrate them to OKLCH once, centrally.
   (see `i18n-rtl`).
 
 ## See also
+- `design-system`
 - `nextjs-module`
 - `i18n-rtl`

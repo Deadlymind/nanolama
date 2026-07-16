@@ -87,6 +87,18 @@ skills:
   - name: frontend-perf
     category: frontend
     blurb: "Core Web Vitals (LCP/INP/CLS): bundle/code-split, RSC streaming, image/font, cache tuning."
+  - name: product-ux-design
+    category: frontend
+    blurb: "End-to-end feature UX: roles, task flows with failure branches, IA, screen inventory, acceptance criteria."
+  - name: visual-ui-design
+    category: frontend
+    blurb: "Implementation-ready screen blueprints: hierarchy, layout, typography direction, responsive, states, critique."
+  - name: dashboard-data-design
+    category: frontend
+    blurb: "Decision-first dashboards and dense ERP data: KPI contracts, tables, charts, exceptions, drill-downs, data states."
+  - name: design-system
+    category: frontend
+    blurb: "The governed design language: semantic token roles, component taxonomy, contracts, patterns, deprecation."
 
   # --- Full-stack seam ---
   - name: drf-zod-contract

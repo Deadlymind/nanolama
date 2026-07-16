@@ -70,7 +70,10 @@ the mirrored layout sensibly (ties `i18n-rtl`).
 ## Verify
 Automated checkers catch only part of the picture — roughly what is machine-testable
 (missing labels, contrast ratios, bad ARIA), not whether focus order makes sense or
-a flow is usable. Run all three passes:
+a flow is usable. Flow- and layout-level WCAG 2.2 criteria (target size, focus not
+obscured, redundant entry, consistent help, dragging alternatives) are baked in at
+design time by `product-ux-design` and `visual-ui-design`; this audit verifies they
+survived implementation. Run all three passes:
 - an **axe-style** automated scan in CI on rendered pages,
 - a **keyboard-only** pass (unplug the mouse: Tab, Enter, Space, Escape, arrows),
 - a **screen-reader** pass (VoiceOver/NVDA) on the primary flow.

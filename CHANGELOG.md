@@ -8,14 +8,41 @@ All notable changes to nanolama are documented here. The format is based on
 
 ### Added
 
+- **Four frontend design skills** (**45 → 49**), added as an **explicit owner-authorized
+  product-scope expansion** — not through the evidence gate, which remains the rule for
+  every future skill and is not weakened by this exception. Together they form one design
+  chain (workflow → data → screen → system → implementation) with de-duplicated ownership:
+  - **`product-ux-design`** — end-to-end feature UX for complex B2B SaaS/ERP: users and
+    roles, jobs, task flows with failure/recovery branches, information architecture,
+    screen inventory, progressive disclosure, UX research *planning* (never invented
+    findings), and testable acceptance criteria.
+  - **`visual-ui-design`** — implementation-ready visual blueprints for a specific screen:
+    hierarchy, layout, typography direction, spacing, complete visual states, restrained
+    microinteractions, responsive/mobile-web composition, and screenshot critique — with
+    an explicit rejection list for the generic-AI-dashboard look.
+  - **`dashboard-data-design`** — decision-first dashboards and dense operational data:
+    KPI contracts (question → calculation → comparison → threshold → action), chart
+    selection that answers questions, operational tables, exceptions, filters and saved
+    views, drill-downs, reconciliation, and honest data states (zero ≠ missing).
+  - **`design-system`** — the governed design language: semantic token roles, typography
+    and spacing scales, component taxonomy and contracts, shared patterns, naming,
+    contribution rules, deprecation and migration. Semantics and governance live here;
+    the Tailwind/shadcn code stays in `tailwind-shadcn`.
+
 - `BACKLOG.md` — five researched, scoped candidates (`secure-file-ingestion`,
   `postgres-query-planning`, `bulk-import-pipeline`, `slo-error-budgets`,
   `load-capacity-testing`) recorded as a **validated backlog, not a release plan**, with
   the evidence gate that keeps them out until real usage justifies them. The catalogue
-  deliberately holds at **45**.
+  deliberately held at **45** when this was recorded; the owner-authorized design
+  expansion above moves the hold to **49** without opening the gate.
 
 ### Changed
 
+- De-duplicated design-space ownership so triggers stay predictable: `tailwind-shadcn`
+  now **implements** the design system (its description no longer claims to *define* it)
+  and hands token/variant/pattern decisions to `design-system`; `nextjs-module` hands
+  "design the workflow/screens" to `product-ux-design` and `visual-ui-design` before
+  implementation.
 - CI pins the official validator to `@anthropic-ai/claude-code@2.1.211` instead of
   `@latest`. The GitHub Actions were already SHA-pinned for exactly this reason, so a
   floating npm tag was an inconsistency — that package publishes very frequently, and an
