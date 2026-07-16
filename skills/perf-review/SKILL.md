@@ -75,6 +75,12 @@ dashboard, minutes for a report.
   `LIMIT`) first, then cache.
 - Invalidate or accept staleness — a cached aggregate won't reflect a new write until
   the TTL expires; keep the TTL short or bust the key on write.
+- A slow endpoint the frontend polls on an interval amplifies: each client re-fires
+  the query every tick, and blind auto-retry on failure multiplies it further until
+  the connection pool is exhausted and the whole app 5xxs. Fixing the query is
+  necessary but not sufficient — also stop the retry storm (exponential back-off,
+  disable blind auto-retry). Treat every polled endpoint as one that must be *both*
+  bounded *and* cached.
 
 ## See also
 - `drf-api`

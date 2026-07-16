@@ -83,6 +83,15 @@ scoping lives in `get_queryset`, not here.
   `request.user` server-side (see `security-review`).
 - Order matters — an empty or missing `perm_base`/action must fail closed, so guard
   the `None` case before building the codename string.
+- UI-level checks are UX, never access control. Hiding a button or nav item by role
+  only tidies the screen; the API endpoint is directly callable (curl, devtools,
+  a scripted client), so the server must re-authorize every request. A hidden button
+  protects nothing.
+- A deny-by-default class returns 403 for a codename that was never registered/seeded.
+  A new `{resource}_{action}` must exist in the permission store *before* the gate can
+  grant it — otherwise `has_perm` finds nothing and denies. This is the number-one cause
+  of "my new endpoint always returns 403"; seed the codename (and grant it to a role)
+  first.
 
 ## See also
 - `multi-tenancy`

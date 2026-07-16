@@ -52,6 +52,12 @@ skills:
   - name: db-concurrency
     category: backend
     blurb: "Money/counter safety: select_for_update + atomic + F(); Decimal not float."
+  - name: money-decimal
+    category: backend
+    blurb: "Fixed-precision Decimal money math: never float, quantize per step, one rate set, golden tests."
+  - name: webhook-handler
+    category: backend
+    blurb: "Receive inbound webhooks safely: verify signature, dedupe by event id, resolve tenant, ack then enqueue."
 
   # --- Frontend / Next.js ---
   - name: nextjs-module
@@ -119,11 +125,17 @@ skills:
   - name: version-check
     category: quality
     blurb: "Deep-research the current stable/LTS version and support window before installing or pinning."
+  - name: incident-response
+    category: quality
+    blurb: "Once it is live-broken or a secret leaked: report, contain, fix, blameless post-mortem, rotate."
 
   # --- Workflow & Meta ---
   - name: commit-message
     category: workflow
     blurb: "Write Conventional Commits from the staged diff; correct type/scope/subject."
+  - name: git-workflow
+    category: workflow
+    blurb: "The branch to PR to merge loop: branch discipline, rebase before review, and safe recovery."
   - name: changelog
     category: workflow
     blurb: "Maintain a Keep a Changelog CHANGELOG.md; roll Unreleased into a release."

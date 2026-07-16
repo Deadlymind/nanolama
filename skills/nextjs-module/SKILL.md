@@ -80,6 +80,12 @@ only applies to browser fetches.
   the client exists to centralize.
 - Return `undefined` for `204 No Content` before calling `res.json()`, or a DELETE
   mutation throws on an empty body.
+- Render loading, empty, AND error as three distinct states, not just success. A
+  successfully-fetched empty list (`data.length === 0`) is not an error and not still
+  loading — it needs its own empty-state UI (a message plus a call to action, e.g. a
+  "Create your first invoice" button), never an infinite spinner or a blank table. So
+  the page reads: `isPending` -> spinner, `error` -> error state, empty -> empty state,
+  else -> the list.
 - Validate response shapes at the fetcher boundary with Zod when the payload is
   untrusted or drifts (see `drf-zod-contract`).
 

@@ -42,12 +42,14 @@ Access *within* a tenant is a separate concern — gate it with `rbac-permission
    ```python
    # tenants/mixins.py
    class TenantScopedViewSet(viewsets.ModelViewSet):
+       tenant_field = "entreprise_id"                     # override for indirect ownership
+
        def get_queryset(self):
            user = self.request.user
            tenant_id = getattr(user, "entreprise_id", None)
            if not user.is_authenticated or tenant_id is None:
                return super().get_queryset().none()      # fail closed
-           return super().get_queryset().filter(entreprise_id=tenant_id)
+           return super().get_queryset().filter(**{self.tenant_field: tenant_id})
 
        def perform_create(self, serializer):
            serializer.save(entreprise=self.request.user.entreprise)
@@ -62,6 +64,13 @@ Access *within* a tenant is a separate concern — gate it with `rbac-permission
 Keep the invariant; change only what "the current tenant" resolves to.
 
 - **One entreprise = one company (default).** `user.entreprise_id` is the tenant.
+- **Indirect ownership (tenant reached through a parent).** Some models have no direct
+  tenant FK — they belong to one through a parent row. Make the mixin field configurable
+  with a class attribute (`tenant_field = "entreprise_id"` by default) and filter on it
+  (`.filter(**{self.tenant_field: tenant_id})`). For an indirectly owned model, set the
+  traversal path, e.g. `tenant_field = "parent__entreprise"`. The fail-closed `.none()`
+  and `perform_create` stamping (via the parent) still apply — and index the parent FK
+  the path joins on, or every scoped read scans.
 - **Sub-teams / departments inside a tenant.** Tenant FK still gates isolation; add a
   second, *optional* `team`/`departement` FK and layer it as an RBAC/visibility filter
   on top of the tenant filter — never as a replacement for it.

@@ -88,6 +88,19 @@ or `celery-task` and keep the migration to schema only.
   add nullable, backfill, then set `NOT NULL` in a follow-up.
 - Run `python manage.py makemigrations --check --dry-run` in CI so a model change
   that forgot its migration fails the build (see `ci-cd`).
+- On a multi-instance or rolling deploy, run `migrate` as a single leader-only
+  step (one instance), never on every instance's startup — concurrent `migrate`
+  runs race the migration ledger and can deadlock or double-apply.
+- Never edit a migration that is already applied or committed — add a new forward
+  migration. Two branches that each add a migration to one app clash; resolve with
+  `makemigrations --merge` and rebase. `--fake` marks a migration applied *without*
+  running it — safe only when the DB already matches that state, otherwise it
+  silently skips the real schema change.
+- Decide where a data change lives. A one-time backfill tied to *this* schema
+  change belongs in `RunPython` in the migration; evolving reference/config data
+  belongs in an idempotent, re-runnable seed management command (not a migration —
+  migrations are frozen and replay everywhere forever); a one-off repair of bad
+  data belongs in a run-once fix command.
 
 ## See also
 - `multi-tenancy`

@@ -61,6 +61,20 @@ Framework internals (Django's ORM, DRF routing, TanStack Query's cache), trivial
 getters/setters, and pure passthrough. If a test would only re-assert that Django or
 Zod works, delete it. Cover *your* logic — scoping, permissions, coercion, edge cases.
 
+## Shape of a test
+Keep **Arrange / Act / Assert** visibly separate — build state, do the one thing,
+assert the outcome. Name the test after the behavior so it reads as a sentence:
+`test_empty_value_is_rejected`, not `test_2`. One behavior per test — if the name
+needs an "and", split it. Always cover the **unhappy path**: empty, zero, negative,
+the boundary value, and the missing-permission case, not just the golden input.
+
+## Is the test real?
+Before committing, **break the code on purpose** and confirm the test goes red — a
+test that passes no matter what is worse than none. Assert the one value that
+encodes the behavior (`resp.json()["total"] == "12.500"`), not an exact HTML dump or
+a huge JSON blob that breaks on any cosmetic change. Mock **only the boundary** — the
+outbound HTTP call, the clock — and run the real logic under test through it.
+
 ## Adapt to your repo
 Rename `Entreprise`/`entreprise`, the perm codenames, the cookie name (`access` vs your
 `SIMPLE_JWT["AUTH_COOKIE"]`), and the fetch-client import path (`@/lib/api-client`) to
@@ -75,8 +89,18 @@ and run the suite against the same database engine as production so behavior mat
 - Mock the shared client module, not `global.fetch` — you are testing your hook and
   schema, not the browser's networking.
 - A green suite proves shape, not real behavior — still drive the flow (see `verify`).
+- For money or precise computations, assert the **exact** known value and pin a
+  hand-verified golden fixture — never an approximate compare (see `money-decimal`).
+- For concurrency, don't try to reproduce the race; test the **invariant** the lock
+  protects — balance never negative, no duplicate numbers (see `db-concurrency`).
+- Make each test self-contained: build all state in setup. No reliance on run order,
+  leftover data from another test, or the machine's timezone.
+- A flaky test is a bug — fix the cause, never rerun until it goes green.
+- A red test is a stop sign. Never delete or skip a failing test just to merge.
 
 ## See also
 - `multi-tenancy`
+- `money-decimal`
+- `db-concurrency`
 - `verify`
 - `ci-cd`

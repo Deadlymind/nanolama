@@ -35,6 +35,7 @@ from billing.models import Invoice
     autoretry_for=(ConnectionError,),   # transient only — not ValueError/DoesNotExist
     retry_backoff=True,                 # 1s, 2s, 4s… exponential
     retry_backoff_max=300,
+    retry_jitter=True,                  # randomize the delay — no lockstep herd
     max_retries=5,
     soft_time_limit=25,                 # SoftTimeLimitExceeded fires here
     time_limit=30,                      # SIGKILL backstop
@@ -77,6 +78,13 @@ tenant instead of scheduling a single global sweep.
 - `autoretry_for=(Exception,)` retries real bugs 5 times before failing — list only
   transient exception types (network, lock, rate-limit).
 - No `soft_time_limit` means a hung external call pins a worker forever; always set both.
+- `retry_backoff` alone still retries a whole failed batch in lockstep — every message
+  waits the same 1s, 2s, 4s… and re-hammers the recovering dependency simultaneously.
+  Add `retry_jitter=True` so each retry picks a randomized delay and the herd spreads out.
+- Workers run outside the web request/response cycle, so the automatic per-request
+  connection close never fires; idle DB connections pile up until the database refuses new
+  ones. Connect `django.db.close_old_connections` to the `task_prerun`/`task_postrun`
+  signals (and to beat startup) in your Celery config so each task cleans up its own.
 - `acks_late=True` gives at-least-once delivery, so the idempotency guard is mandatory,
   not optional — without it a redelivered message double-charges or double-sends.
 - Passing an ORM object serializes a stale copy and silently overwrites concurrent edits;

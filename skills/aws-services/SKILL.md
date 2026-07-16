@@ -48,6 +48,8 @@ resource "aws_db_instance" "pg" {
   db_subnet_group_name   = aws_db_subnet_group.private.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   storage_encrypted      = true
+  backup_retention_period = 7        # >0 enables automated backups + PITR; tune the window
+  deletion_protection     = true     # a stray `terraform destroy`/console delete is blocked
   # password from Secrets Manager / env — never a literal here
 }
 resource "aws_s3_bucket_public_access_block" "media" {
@@ -60,6 +62,12 @@ resource "aws_s3_bucket_public_access_block" "media" {
 # The instance role gets a scoped policy (s3:GetObject/PutObject/DeleteObject on
 # this bucket only) — the app never holds an AWS_ACCESS_KEY_ID.
 ```
+
+**Durable, browser-reachable S3.** Turn on bucket *versioning* so an overwritten
+or deleted object can be restored from a prior version — the bucket stays private
+throughout. Add a CORS rule whose `AllowedOrigins` is your frontend origin *only*
+(e.g. `https://app.example.test`), never `*`, so the browser can load assets via
+presigned URLs while Block Public Access stays ON.
 
 **ElastiCache Redis, same posture.** A second SG allows only the app SG on 6379;
 that one endpoint backs both the Celery broker/result store and the Channels
@@ -89,6 +97,13 @@ identical — only the syntax changes.
   don't add one — serve via presigned URLs from the role.
 - ElastiCache Redis has no auth by default; the SG *is* the perimeter, so never
   widen it. Secrets belong in Secrets Manager, injected as env at deploy.
+- A DB with `deletion_protection = false` and no backup retention is one typo away
+  from unrecoverable loss — automated backups give point-in-time recovery; keep
+  both on.
+- Keep the app, database, cache, and object storage in the *same* region. A store
+  in a different region from the compute is the classic can't-connect bug, adds
+  latency, and bills cross-region transfer — confirm the region (keep it a
+  variable) before creating each resource.
 
 ## See also
 - `deploy-aws`

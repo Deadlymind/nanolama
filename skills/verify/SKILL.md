@@ -28,6 +28,9 @@ run the proving command, say so plainly instead of implying success.
      ```
    - UI: drive the actual page/flow and watch the result (see `run` if available).
    - Async/websocket: trigger it and tail the worker/consumer logs for the effect.
+   - Authorization: exercise the NEGATIVE case. A successful request from an
+     authorized user proves nothing about whether an unauthorized one is actually
+     blocked — send the same request as a user *without* the role and confirm 403.
 3. **Read the evidence, don't assume it.** A 200 with the wrong body is still a fail.
 4. **Paste the observed output** into your report, then state the claim.
 5. If a regression is possible, add a test that would have caught it (see `write-tests`).
@@ -38,6 +41,7 @@ run the proving command, say so plainly instead of implying success.
 | "Endpoint works" | fresh request + observed 2xx + correct body | typecheck / unit test passing |
 | "Bug fixed" | reproduce the original failure, then show it gone | "the code looks right" |
 | "Tenant-scoped" | user B gets 404/empty for user A's row | filter present in the diff |
+| "Authorized only" | user without the role gets 403, one with it gets 2xx | permission_class present in the diff |
 | "Deploys" | health check green on the target env | build succeeded locally |
 
 ## Adapt to your repo

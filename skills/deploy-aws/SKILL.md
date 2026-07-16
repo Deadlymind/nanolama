@@ -25,7 +25,10 @@ WSGI (Gunicorn) and one ASGI (Uvicorn pointed at the Channels application).
 Daphne is the local dev server — don't ship it here:
 
 ```procfile
-web: gunicorn myproject.wsgi:application --bind :8000 --workers 3
+# --max-requests recycles each worker after N requests to cap memory growth;
+# --max-requests-jitter staggers the recycles so they don't all restart at once
+# (values illustrative — tune to your traffic and memory budget).
+web: gunicorn myproject.wsgi:application --bind :8000 --workers 3 --max-requests 2000 --max-requests-jitter 200 --timeout 60 --graceful-timeout 30
 asgi: uvicorn myproject.asgi:application --host 0.0.0.0 --port 5000 --workers 2
 ```
 
@@ -44,7 +47,7 @@ Everything else is standard EB/Amplify wiring in prose:
    `pnpm install --frozen-lockfile`) and `pnpm run build`. Never `pnpm@latest`.
    Build-time `NEXT_PUBLIC_*` vars come from the Amplify console environment.
 4. **Verify, then decide** — hit the health endpoint and read the body, don't
-   assume: `curl -sS -w '%{http_code}\n' https://api.example.com/health`.
+   assume: `curl -sS -w '%{http_code}\n' https://<your-api-domain>/health`.
 5. **Rollback** = redeploy the last-known-good version label with no rebuild:
    `eb appversion --list` to find the prior good label, then
    `eb deploy --version app-20260715-1`.
@@ -68,6 +71,22 @@ run websockets, ensure the load balancer forwards the `asgi` port and upgrades.
   and commit the lockfile; use `--frozen-lockfile`.
 - Secrets in `.ebextensions` or `amplify.yml` land in git history — keep them in
   the environment (`eb setenv` / Amplify console) only.
+- **Websockets connect then drop after ~60s?** That's the load balancer idle
+  timeout, not your code. Raise the ALB idle timeout (e.g. `3600`) via an
+  `.ebextensions` `option_settings` entry under `aws:elbv2:loadbalancer`, and
+  confirm the LB forwards/upgrades to the ASGI port.
+- **Make `/health` actually probe its dependencies** — a cheap DB query plus a
+  cache/broker ping, returning non-200 if either is down. A static `200` hides
+  real breakage. On EB a failing health check auto-rolls-back the deploy; that's
+  an intentional gate — don't disable it (see `verify`).
+- **Quiesce background workers before `migrate`.** Add a `leader_only`,
+  `ignore-errors` container command that stops the workers on the leader right
+  before the migrate command, so they release DB connections/locks and don't race
+  the schema change. They restart with the new release (see `migrations`).
+- **Backend-only commit still rebuilds the frontend?** A push-triggered build host
+  (Amplify) rebuilds the whole frontend on every push, even backend-only commits.
+  Suppress non-frontend commits with a commit skip marker or a path filter so you
+  don't burn build minutes on changes that can't affect the frontend.
 - A green build is not a green deploy — the health check is the proof (see `verify`).
 
 ## See also

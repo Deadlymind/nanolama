@@ -12,7 +12,21 @@ All notable changes to nanolama are documented here. The format is based on
   window (at today's date) before installing, pinning, or upgrading any stack
   technology, with a dated 2026-07-16 snapshot (`reference/stack-versions-2026-07.md`)
   and the re-verify-at-install method. Cross-referenced from `dependency-audit` and `ci-cd`.
-  Brings the library to **30 skills**.
+- Four skills distilled from an engineering-handbook review (general patterns only,
+  no proprietary specifics): `webhook-handler` (verify → dedupe → resolve-tenant →
+  ack-then-enqueue), `git-workflow` (branch/PR/rebase/safe-recovery), `money-decimal`
+  (fixed-precision Decimal money + golden-fixture tests), and `incident-response`
+  (report → contain → fix → blameless post-mortem → rotate). Library is now **34 skills**.
+
+### Changed
+
+- Enriched ~15 skills with hard-won production patterns (portable, no proprietary
+  specifics): ALB idle-timeout dropping websockets, RDS backups + deletion protection,
+  dependency-probing health checks, nested/indirect tenant scoping, "unseeded codename
+  ⇒ 403", money/counter + BOLA + auth-token security-review items, AAA + golden +
+  break-it-to-prove-it testing discipline, `retry_jitter` + worker connection hygiene,
+  websocket keepalive-under-idle-timeout, leader-only migrate + migration-graph rules,
+  and two-layer AI evals + prompt-injection-is-capability-limits.
 
 ## [0.1.0] - 2026-07-16
 

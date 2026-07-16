@@ -16,7 +16,10 @@ Five steps, in order — skipping one is how band-aids happen:
 1. **Reproduce.** A reliable repro (command, click-path, failing test) before any fix.
    Can't reproduce it → you can't confirm you fixed it.
 2. **Isolate.** Bisect the surface — narrow which layer, request, or line owns the
-   failure. Read the logs at that layer (below), don't guess.
+   failure. Read the logs at that layer (below), don't guess. Read a traceback
+   *bottom-up*: the final line is the real error, the frames above are how you got
+   there — jump to the deepest frame that is *your* code, not the framework.
+   Change one thing at a time; batched edits hide which change mattered.
 3. **Hypothesize.** State a specific, falsifiable cause ("stale cache because the
    mutation never invalidates the list key"), then test *that*.
 4. **Fix the root cause.** Change the thing that is actually wrong, not the symptom.
@@ -60,6 +63,16 @@ match your project. Confirm your actual log locations and the command that start
 each process (worker, Daphne/ASGI). Match query keys to your app's real key factory.
 
 ## Gotchas
+- A 403 or an empty list is often the auth/tenant layer *working correctly*, not a bug.
+  Confirm the request carried the right identity and scope (auth header, tenant id such
+  as `X-Tenant-ID`) before you touch a guard. Never "fix" a 403 by deleting the
+  permission check, or an empty list by loosening the tenant filter — that ships a
+  security hole. Fix the missing permission or the wrong scope instead.
+- Many unrelated endpoints failing at once points at a *shared resource* (DB, connection
+  pool, cache, auth, load balancer), not one view. Suspect the common layer first — see
+  `incident-response`.
+- Believe the evidence over your memory, and assume *your* code is wrong before the
+  framework's — the bug is far more likely in the line you wrote yesterday.
 - Fixing the symptom (swallow the exception, add a retry, poll on an interval) leaves
   the cause live — it resurfaces elsewhere. Name the cause before you touch code.
 - No repro = no fix. If it's intermittent, find the ordering/timing/data that triggers it.
@@ -72,3 +85,4 @@ each process (worker, Daphne/ASGI). Match query keys to your app's real key fact
 - `verify`
 - `perf-review`
 - `react-query`
+- `incident-response`

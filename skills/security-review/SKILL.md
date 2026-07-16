@@ -38,6 +38,22 @@ noise — a fail-closed tenant leak outranks a style nit by orders of magnitude.
    **private** storage (never a public-read S3 ACL); never trust the client filename.
 5. **Secrets.** No keys, tokens, or `.env` values in the diff — config comes from
    the environment. Watch AI/search keys especially (see `ai-integration`).
+6. **Money & counters.** Flag any balance/counter that reads a value into app code
+   and writes it back. A read-modify-write without `select_for_update()` inside
+   `transaction.atomic()` is a race. **Confirmed** example: two concurrent requests
+   both read `100`, both subtract, one write is lost. Require an atomic `F()`-style
+   expression, a decimal type for money, and validation **inside** the locked block —
+   an "insufficient funds" check outside the lock still oversells (see `money-decimal`,
+   `db-concurrency`).
+7. **Object-level authz / BOLA.** Validate **every** foreign-key id in the body or
+   params against the caller's tenant, not just the object being fetched. An
+   unvalidated FK lets a user reference or attach another tenant's row even when the
+   top-level queryset looks correctly scoped — e.g. posting a `category_id` that
+   belongs to a different tenant. Re-scope each FK through the caller's queryset.
+8. **Auth & tokens.** Tokens live in `HttpOnly`/`Secure`/`SameSite` cookies, never
+   `localStorage`. Never log a token, cookie, or `Authorization` header. No
+   hand-rolled auth/session flow — lean on the framework. External credentials
+   (third-party API keys, OAuth secrets) encrypted at rest, not stored plaintext.
 
 ## Idioms — what a real finding looks like
 ```python
@@ -75,3 +91,5 @@ Know your storage default (public vs private bucket) before judging upload code.
 - `multi-tenancy`
 - `rbac-permissions`
 - `ai-integration`
+- `money-decimal`
+- `db-concurrency`

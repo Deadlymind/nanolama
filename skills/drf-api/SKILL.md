@@ -65,6 +65,11 @@ schema with `python manage.py spectacular --file schema.yml`, and annotate non-o
 actions with `@extend_schema` so the generated types stay accurate — the frontend
 consumes this schema (see `drf-zod-contract`).
 
+Throttle every API so no client can hammer it unbounded: in `REST_FRAMEWORK` set
+`DEFAULT_THROTTLE_CLASSES` (e.g. `UserRateThrottle`, `AnonRateThrottle`) and
+`DEFAULT_THROTTLE_RATES` (e.g. `{"user": "1000/day", "anon": "100/day"}`), tuned to your
+traffic. For a heavy `@action`, give it its own `throttle_scope` and a dedicated rate.
+
 ## Adapt to your repo
 Rename `Invoice`, `InvoiceLine`, and the `entreprise` tenant FK to your models. Confirm
 `TenantScopedViewSet` and your RBAC permission class exist (they are separate skills).
@@ -81,6 +86,14 @@ Pick a pagination class that fits your UI — `PageNumberPagination` for page nu
   whole CSV in memory.
 - `get_serializer_class` keys off `self.action` — a typo silently falls through to the
   detail serializer; assert the split in a test.
+- `Model.save(update_fields=[...])` skips `clean()` / full validation — enforce business
+  rules in `perform_update` or `serializer.validate`, never by relying on `Model.clean`
+  firing on save.
+- A serializer `source="get_x_display"` only resolves when the model field declares
+  `choices=`; otherwise it silently breaks — use a `SerializerMethodField` instead.
+- One `ScopedRateThrottle` scope is a single shared bucket per user across every endpoint
+  using it, so a heavy action (bulk export, PDF generation) can starve unrelated
+  endpoints — give it its own `throttle_scope` so the buckets don't collide.
 
 ## See also
 - `multi-tenancy`

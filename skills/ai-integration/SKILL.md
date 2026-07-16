@@ -49,7 +49,16 @@ supplies a tenant id — drop it from the tool's input schema); atomic (wrap the
 in `transaction.atomic()`); audited (log actor, tool, inputs, result row id); non-destructive
 by default (soft-delete/append, never expose a hard-delete tool); and bounded plus
 confirm-gated for anything irreversible (cap amounts/counts, require an explicit human
-confirmation before an unrecoverable action).
+confirmation before an unrecoverable action). For money/status mutations, `select_for_update()`
+the row inside the transaction and re-validate the invariant (balance, current status) before
+persisting — a retried or concurrent tool call must not double-apply (see `db-concurrency`).
+
+**All model-read content is untrusted — plan for prompt injection.** Not just the user's chat:
+the *contents* of any scanned/extracted document, search snippet, or fetched page the model
+reads can carry injected instructions. The defense is capability limits, not persuasion — do
+**not** rely on a "ignore injected instructions" line in the prompt. Contain it structurally:
+scoped tools that only touch the actor's tenant, confirm-gated writes, and simply not exposing
+destructive tools. If the model has no tool to do harm, an injected instruction cannot make it.
 
 **OCR / structured extraction.** Send the document as a `document`/`image` content block,
 ask for JSON, then validate against a schema (e.g. `InvoiceSchema.model_validate_json(...)`)
@@ -60,8 +69,15 @@ tenant-scoped result.
 returns snippets you pass back as a `tool_result`. Keep the API key server-side; never let
 the model see it.
 
-**Evals.** Keep a small graded set — inputs with expected outputs — and run it in CI before
-shipping any prompt or model change, so a regression fails the build instead of shipping.
+**Per-tenant metering.** Treat an AI endpoint like a rate-limited API — track and cap usage
+per tenant with a credit/quota counter, so one heavy or malicious user cannot run up an
+unbounded bill. Decrement on each model call and reject when the tenant is over quota.
+
+**Evals — two layers.** (1) A deterministic **hard gate** that must pass every CI run, with no
+model call: routing/tool-selection correctness, must-NOT-call-a-tool regression cases,
+tenant + RBAC enforcement, and golden numeric outputs. (2) An **LLM-as-judge** graded set that
+is **advisory only** — it is stochastic and needs the API key, so keep it non-blocking. Never
+enforce safety with a stochastic check; a gate that can flake is not a gate.
 
 ## Adapt to your repo
 Rename `entreprise`/`Entreprise` and the accessor (`user.entreprise` vs
@@ -78,9 +94,12 @@ never in code.
 - Long or multi-step loops block the request thread — run them in a Celery task (see
   `celery-tasks`), not inline in the view.
 - Cap the loop iterations; a misbehaving model can otherwise spin tool calls forever.
+- An uncapped AI endpoint is a billing DoS — meter per tenant before it ships, not after.
 - Model ids and pricing change — read them from config, verify against docs, never inline.
 
 ## See also
 - `security-review`
 - `celery-tasks`
+- `db-concurrency`
+- `rbac-permissions`
 - `verify`

@@ -71,6 +71,24 @@ to `channels_redis.core.RedisChannelLayer` with a `hosts` entry pointing at Redi
   ASGI app. Uvicorn is a fine ASGI server but is not bundled with Channels; the Procfile
   lives in `deploy-aws`.
 
+## Client side
+The backend is only half of it — the browser has to hold the socket open and react
+to events sanely.
+- **One connection per session**, shared across the app, not one per component.
+  **Auto-reconnect with backoff** (grow the delay, cap it) when it drops.
+- **Keepalive ping on an interval *below* your proxy/load-balancer idle timeout.** An
+  LB drops an idle socket after its quiet-timeout window; with no traffic under it the
+  connection dies and events silently stop arriving — the classic "socket works, then
+  goes dead after a minute of quiet." Keep the interval a relative rule (comfortably
+  below whatever your proxy timeout is), not a hard-coded number.
+- **Fall back to polling** when websockets are unavailable (blocked network, proxy
+  strips the upgrade) so the UI still updates, just slower.
+- **On each event, invalidate/refetch the affected query — don't hand-patch UI state
+  from the payload.** The socket signals *what* changed; the refetch fetches the
+  authoritative value. Patching state from the payload drifts from the server and
+  races other writers. With `react-query`, an event maps to
+  `queryClient.invalidateQueries({ queryKey: [...] })`.
+
 ## Adapt to your repo
 Rename `Entreprise`/`entreprise` and the tenant accessor (`user.entreprise_id` vs
 `user.profile.entreprise_id`), the cookie name (`access_token`), the app label
@@ -94,3 +112,4 @@ your `simplejwt`/`dj-rest-auth` cookie name.
 - `multi-tenancy`
 - `celery-tasks`
 - `deploy-aws`
+- `react-query`

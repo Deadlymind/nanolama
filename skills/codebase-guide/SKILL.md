@@ -65,6 +65,9 @@ Conventions on every change:
 - One app per bounded resource; keep `models / serializers / views / urls / tests`
   split as above rather than one mega-file.
 - Server owns the tenant: `read_only_fields` on the FK, stamped in `perform_create`.
+  Stamp the audit trail in the same override — `perform_create` sets `created_by`
+  (and `updated_by`) alongside the tenant, `perform_update` sets `updated_by` — from
+  the request user, never the client. Newcomers wire the tenant and forget the who.
 - Tests include the isolation case for every scoped resource — it is the one test
   reviewers block a PR for missing.
 
@@ -81,6 +84,10 @@ names. Confirm your project `urls.py` mounts app routers under a stable prefix
 - Custom `@action` methods do not inherit the RBAC check automatically — gate each one.
 - A migration that adds a `null=False` tenant FK to a populated table needs a default
   or a data migration (see `migrations`).
+- Business rows are **soft-deleted**, not hard-`DELETE`d. Override `destroy()` to set a
+  flag (`archived_at` / `is_deleted`) instead of removing the row, and exclude flagged
+  rows from the default `get_queryset()` so they drop out of lists and 404 on detail
+  while staying recoverable. A real `DELETE` loses the audit trail and breaks FKs.
 
 ## See also
 - `multi-tenancy`
