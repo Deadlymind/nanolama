@@ -7,7 +7,7 @@
 [![validate](https://github.com/Deadlymind/nanolama/actions/workflows/ci.yml/badge.svg)](https://github.com/Deadlymind/nanolama/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Skills: 39](https://img.shields.io/badge/skills-39-blue.svg)
-![Version: 0.2.0](https://img.shields.io/badge/version-0.2.0-blueviolet.svg)
+![Version: 0.2.1](https://img.shields.io/badge/version-0.2.1-blueviolet.svg)
 ![Stack: Django 5.2 · Next.js 16](https://img.shields.io/badge/stack-Django%205.2%20%C2%B7%20Next.js%2016-informational.svg)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 <!-- END BADGES -->
@@ -108,7 +108,7 @@ _39 skills across 7 categories._
 
 | Skill | What it does |
 | --- | --- |
-| [`audit-logging`](skills/audit-logging/SKILL.md) | Append-only, tamper-evident audit trail of auth, RBAC and data-access events, tenant-scoped. |
+| [`audit-logging`](skills/audit-logging/SKILL.md) | Append-only, tenant-scoped audit trail of auth, RBAC and data-access events. |
 | [`celery-tasks`](skills/celery-tasks/SKILL.md) | Hardened background jobs: time limits, retries/backoff, pass ids not objects, idempotency. |
 | [`codebase-guide`](skills/codebase-guide/SKILL.md) | How a feature is built end to end: model to serializer to viewset to urls to tests. |
 | [`db-concurrency`](skills/db-concurrency/SKILL.md) | Money/counter safety: select_for_update + atomic + F(); Decimal not float. |
