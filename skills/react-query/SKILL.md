@@ -1,6 +1,6 @@
 ---
 name: react-query
-description: Manages server state on the Next.js 16 frontend with TanStack Query v5 — structured array query keys, staleTime/gcTime tuning, useQuery/useMutation with onSuccess invalidateQueries by key prefix, and the server-state vs client-state boundary. Use when fetching or caching API data, wiring a query-key factory, invalidating after a POST/PATCH/DELETE, fixing stale UI after a mutation, or deciding what belongs in Query vs Zustand. Not for persisted UI/client state (see zustand-state) or typing the API payload shapes (see drf-zod-contract).
+description: Manages server state on the Next.js 16 frontend with TanStack Query v5 — structured array query keys, staleTime/gcTime tuning, useQuery/useMutation with onSuccess invalidateQueries by key prefix, and the server-state vs client-state boundary. Use when fetching or caching API data, wiring a query-key factory, invalidating after a POST/PATCH/DELETE, fixing stale UI after a mutation, or deciding what belongs in Query vs Zustand. Not for the tenant-switch procedure itself and what to purge on switch (see tenant-session-switch), persisted UI/client state (see zustand-state), or typing the API payload shapes (see drf-zod-contract).
 ---
 
 # React Query (server state with TanStack Query v5)
@@ -65,17 +65,10 @@ const { mutate } = useMutation({
 one place client and server state meet. Never duplicate the fetched rows.
 
 ## Switching tenants
-A tenant switch changes which rows every key means. Cancel, clear, then let the
-active observers refetch under the new tenant's keys:
-
-```ts
-async function switchTenant(id: string) {
-  setEntreprise(id);          // Zustand: the header's source of truth (see zustand-state)
-  await qc.cancelQueries();   // in-flight requests carry the OLD header — kill them first
-  qc.clear();                 // drop every old-tenant entry; do not merely invalidate
-  resubscribeSockets(id);     // rejoin per-tenant groups (see websockets-channels)
-}                             // active observers refetch under the new tenant's keys
-```
+A tenant switch changes which rows every key means, so it runs as an ordered
+sequence — set the store, `cancelQueries`, remove the old tenant's entries,
+resubscribe sockets, let observers refetch. The order is the safety property; see
+`tenant-session-switch` for the full procedure and tenant-aware persistence.
 
 ## Adapt to your repo
 Rename `invoices`/`invoiceKeys` and the accessor (`/api/invoices/`) per resource,
@@ -101,12 +94,13 @@ once in a `QueryClientProvider` in a client boundary under the App Router. Make
   header.** Two tenants otherwise share the cache entry `['invoices','list',filters]`,
   and after a tenant switch the cache happily serves the previous tenant's rows — a
   cross-tenant leak your backend never sees. Scope every key under
-  `['tenant', tenantId, ...]`, and on switch `cancelQueries()` (in-flight requests
-  carry the old header) then `clear()` before refetching. Client-side isolation is
+  `['tenant', tenantId, ...]` so two tenants can never collide in one entry (the
+  purge on switch is `tenant-session-switch`'s job). Client-side isolation is
   defence-in-depth, not the boundary — the server still enforces it (see
   `multi-tenancy`, `rbac-permissions`).
 
 ## See also
 - `nextjs-module`
+- `tenant-session-switch`
 - `zustand-state`
 - `drf-zod-contract`

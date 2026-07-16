@@ -6,6 +6,44 @@ All notable changes to nanolama are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-16
+
+Six focused skills (**39 → 45**), added only after the 0.2.1 correctness patch landed —
+production-safety fixes first, catalogue growth second. Each new skill takes **ownership**
+of a topic that was previously buried inside a larger skill, and the former host was
+trimmed to a pointer so two skills never compete for the same trigger.
+
+### Added
+
+- **`cookie-auth-csrf`** — the cookie-JWT + CSRF seam end to end: why cookie auth is
+  CSRF-exposed and header auth is not, HttpOnly/Secure/SameSite flags, the deliberately
+  JS-readable `csrftoken`, credentialed CORS with an explicit origin allowlist, refresh
+  rotation and server-side logout revocation.
+- **`tenant-session-switch`** — the ordered switch: set tenant → cancel in-flight (they
+  carry the old header) → remove the old tenant's cache subtree (not merely invalidate) →
+  resubscribe sockets → refetch. Defence in depth; the server still enforces isolation.
+- **`threat-modeling`** — STRIDE per feature at design time against this stack's trust
+  boundaries (tenant, RBAC, auth/CSRF edge, upload ingestion, webhook payloads, the AI tool
+  surface), producing a threat → mitigation → owning-skill table, not a document.
+- **`browser-e2e-testing`** — a handful of critical journeys: storage-state auth reuse,
+  tenant-scoped seeding, asserting the RBAC denial path, and killing flake at the source.
+- **`ai-evals`** — the deterministic hard gate that blocks CI (tool-routing, must-not-call
+  cases, tenant/RBAC through the tool layer, golden values) vs the advisory LLM judge that
+  never gates. Never enforce safety with a check that can flake.
+- **`architecture-decisions`** — ADRs: Context / Decision / Consequences, numbered and
+  immutable, superseded rather than edited.
+
+### Changed
+
+- De-duplicated ownership so triggers do not collide: `nextjs-module` keeps the working
+  client but defers CSRF depth to `cookie-auth-csrf`; `react-query` keeps the
+  tenant-in-the-key invariant but defers the switch procedure to `tenant-session-switch`;
+  `write-tests` keeps unit/integration but defers browser specs to `browser-e2e-testing`;
+  `ai-integration` keeps the agent loop and write-tool contract but defers evals to
+  `ai-evals` — relieving a genuinely overloaded skill.
+- Fills the two structural gaps flagged in review: the Full-stack category grows 1 → 3, and
+  AI 1 → 2.
+
 ## [0.2.1] - 2026-07-16
 
 **Correctness and security patch.** An external audit was adjudicated claim-by-claim

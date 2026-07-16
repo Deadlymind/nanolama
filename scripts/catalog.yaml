@@ -92,6 +92,12 @@ skills:
   - name: drf-zod-contract
     category: fullstack
     blurb: "Keep a DRF serializer and its Zod 4 schema / TanStack hook in sync, end to end."
+  - name: cookie-auth-csrf
+    category: fullstack
+    blurb: "The cookie-JWT + CSRF seam: HttpOnly/SameSite flags, X-CSRFToken on writes, CORS credentials, refresh/logout."
+  - name: tenant-session-switch
+    category: fullstack
+    blurb: "Switch tenant safely: cancel in-flight, clear cache, resubscribe sockets, refetch; tenant in the key."
 
   # --- Infra / DevOps / AWS ---
   - name: deploy-aws
@@ -113,7 +119,10 @@ skills:
   # --- AI ---
   - name: ai-integration
     category: ai
-    blurb: "Claude tool-use + agentic loops; the write-tool safety contract; OCR extraction; evals."
+    blurb: "Claude tool-use + agentic loops; the write-tool safety contract; OCR extraction; per-tenant metering."
+  - name: ai-evals
+    category: ai
+    blurb: "Deterministic hard gate plus an advisory LLM judge; golden sets; never gate safety on a flaky check."
 
   # --- Quality & Security ---
   - name: code-review
@@ -143,6 +152,12 @@ skills:
   - name: incident-response
     category: quality
     blurb: "Once it is live-broken or a secret leaked: report, contain, fix, blameless post-mortem, rotate."
+  - name: threat-modeling
+    category: quality
+    blurb: "STRIDE per feature at design time against this stack's trust boundaries; threat to mitigation to owner."
+  - name: browser-e2e-testing
+    category: quality
+    blurb: "Playwright-style E2E of critical journeys: storage-state auth, tenant seeding, RBAC denial, flake control."
 
   # --- Workflow & Meta ---
   - name: commit-message
@@ -154,6 +169,9 @@ skills:
   - name: changelog
     category: workflow
     blurb: "Maintain a Keep a Changelog CHANGELOG.md; roll Unreleased into a release."
+  - name: architecture-decisions
+    category: workflow
+    blurb: "ADRs: context, decision, consequences; numbered and immutable; supersede rather than edit."
   - name: skill-authoring
     category: workflow
     blurb: "Author or fix a nanolama skill: the SKILL.md contract, description formula, cross-refs."

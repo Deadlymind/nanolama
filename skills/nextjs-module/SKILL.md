@@ -1,6 +1,6 @@
 ---
 name: nextjs-module
-description: Structures a Next.js 16 App Router frontend feature as layered modules (lib/api typed fetchers, query-keys, TanStack Query hooks, React 19 pages) fed by one shared fetch client that sends the auth cookie with credentials include, attaches the tenant header, and normalizes errors. Use when scaffolding a new frontend feature or module, building a fetch/apiClient wrapper, wiring cookie-JWT calls to the DRF backend, deciding where fetchers vs hooks vs pages live, or fixing a feature whose data layer is tangled. Not for query cache config and useMutation invalidation depth (see react-query) or form state and validation (see zod-forms).
+description: Structures a Next.js 16 App Router frontend feature as layered modules (lib/api typed fetchers, query-keys, TanStack Query hooks, React 19 pages) fed by one shared fetch client that sends the auth cookie with credentials include, attaches the tenant header, and normalizes errors. Use when scaffolding a new frontend feature or module, building a fetch/apiClient wrapper, wiring cookie-JWT calls to the DRF backend, deciding where fetchers vs hooks vs pages live, or fixing a feature whose data layer is tangled. Not for the cookie-JWT plus CSRF auth seam itself — cookie flags, credentialed CORS, refresh rotation and logout revocation (see cookie-auth-csrf) — query cache config and useMutation invalidation depth (see react-query), or form state and validation (see zod-forms).
 ---
 
 # Next.js module (layered feature + shared fetch client)
@@ -92,11 +92,11 @@ Component, forward the incoming `cookie` header explicitly — `credentials: "in
 only applies to browser fetches.
 
 ## Gotchas
-- Never read the JWT in JS or put it in `localStorage`; it is an HttpOnly cookie and
-  `credentials: "include"` sends it automatically. That is **not** the whole story:
-  cookie auth is CSRF-exposed, so every unsafe method (POST/PUT/PATCH/DELETE) must also
-  send `X-CSRFToken`, read from the deliberately non-HttpOnly `csrftoken` cookie. A 403
-  on write is this — never `@csrf_exempt` the endpoint to silence it.
+- The client's auth contract, in one rule: `credentials: "include"` on every request,
+  plus `X-CSRFToken` on every unsafe method (POST/PUT/PATCH/DELETE). A 403 on a write
+  means that header is missing — **never `@csrf_exempt` the endpoint to silence it**.
+  See `cookie-auth-csrf` for why cookie auth is CSRF-exposed, the cookie flags,
+  credentialed CORS, and refresh/logout.
 - Never hard-code `Content-Type: application/json` unconditionally. For a `FormData`
   body you must omit the header entirely so the browser can set `multipart/form-data`
   **with its generated boundary** — setting it by hand produces a body the server
@@ -106,8 +106,8 @@ only applies to browser fetches.
   previous tenant's rows. Scope keys under `["tenant", tenantId, ...]` and follow the
   switch procedure in `react-query`. Client-side isolation is defence-in-depth, not the
   boundary — the server still enforces it.
-- Cross-origin cookies need the backend CORS to allow credentials and the cookie to be
-  `SameSite=None; Secure` — a silent 401 in prod is usually this, not your code.
+- A silent 401 that only happens in production is almost never your fetcher — it is the
+  cookie/CORS seam (`cookie-auth-csrf`). Check there before editing this layer.
 - Don't call `fetch` inside components or pages; that scatters auth/tenant/error logic
   the client exists to centralize.
 - Return `undefined` for `204 No Content` before calling `res.json()`, or a DELETE
@@ -129,6 +129,7 @@ only applies to browser fetches.
   server-side fetch over exposing the call (and any check guarding it) to the client.
 
 ## See also
+- `cookie-auth-csrf`
 - `react-query`
 - `rbac-permissions`
 - `zod-forms`

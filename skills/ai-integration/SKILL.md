@@ -1,9 +1,9 @@
 ---
 name: ai-integration
-description: Wires Anthropic Claude into a Django/DRF backend — the agentic tool-use loop (model proposes tool_use, app runs it, returns tool_result, repeat), a write-tool safety contract for data-mutating tools, an OCR/structured-extraction pipeline validated against a schema before persist, Tavily search, and a small graded eval set. Use when adding a Claude agent or tool loop, doing document OCR extraction, calling the anthropic SDK, choosing a model id, or catching AI regressions. Not for the Celery worker that runs a long call (see celery-tasks) or auditing a tool's blast radius (see security-review).
+description: Wires Anthropic Claude into a Django/DRF backend — the agentic tool-use loop (model proposes tool_use, app runs it, returns tool_result, repeat), a write-tool safety contract for data-mutating tools, capability limits against prompt injection, an OCR/structured-extraction pipeline validated against a schema before persist, Tavily search, and per-tenant metering. Use when adding a Claude agent or tool loop, exposing a tool that mutates data, doing document OCR extraction, calling the anthropic SDK, choosing a model id, or capping AI spend per tenant. Not for regression-testing agent behaviour, golden sets or LLM-as-judge scoring (see ai-evals), the Celery worker that runs a long call (see celery-tasks), or auditing a tool's blast radius (see security-review).
 ---
 
-# AI integration (Anthropic Claude, tool-use, OCR, evals)
+# AI integration (Anthropic Claude, tool-use, OCR)
 
 ## When to use
 Adding Claude to the backend — an agent that calls your tools, an OCR/extraction
@@ -73,11 +73,9 @@ the model see it.
 per tenant with a credit/quota counter, so one heavy or malicious user cannot run up an
 unbounded bill. Decrement on each model call and reject when the tenant is over quota.
 
-**Evals — two layers.** (1) A deterministic **hard gate** that must pass every CI run, with no
-model call: routing/tool-selection correctness, must-NOT-call-a-tool regression cases,
-tenant + RBAC enforcement, and golden numeric outputs. (2) An **LLM-as-judge** graded set that
-is **advisory only** — it is stochastic and needs the API key, so keep it non-blocking. Never
-enforce safety with a stochastic check; a gate that can flake is not a gate.
+**Evals.** A prompt, a model id, and a tool schema are untyped inputs — changing one breaks
+routing silently. Cover them with two layers: a deterministic **hard gate** that blocks CI, plus
+an **advisory** LLM-as-judge set that never gates. See `ai-evals` for the full method.
 
 ## Adapt to your repo
 Rename `entreprise`/`Entreprise` and the accessor (`user.entreprise` vs
@@ -98,6 +96,7 @@ never in code.
 - Model ids and pricing change — read them from config, verify against docs, never inline.
 
 ## See also
+- `ai-evals`
 - `security-review`
 - `celery-tasks`
 - `db-concurrency`

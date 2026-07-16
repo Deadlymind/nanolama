@@ -1,6 +1,6 @@
 ---
 name: write-tests
-description: Writes tests for this Django/DRF plus Next.js stack — Django TestCase with a tenant fixture factory, APIClient carrying the cookie JWT, a mandatory tenant-isolation test (user B gets 404/empty for user A's row), RBAC denial tests, and vitest that mocks the shared fetch-client to test hooks and Zod parsing. Use when adding tests, writing a TestCase or vitest spec, testing a ViewSet or React Query hook, covering tenant isolation or a permission denial, or asking what to test here. Not for driving a change end to end before calling it done (see verify) or wiring the CI that runs the suite (see ci-cd).
+description: Writes tests for this Django/DRF plus Next.js stack — Django TestCase with a tenant fixture factory, APIClient carrying the cookie JWT, a mandatory tenant-isolation test (user B gets 404/empty for user A's row), RBAC denial tests, and vitest that mocks the shared fetch-client to test hooks and Zod parsing. Use when adding tests, writing a TestCase or vitest spec, testing a ViewSet or React Query hook, covering tenant isolation or a permission denial, or asking what to test here. Not for real-browser end-to-end specs — fixtures, storage-state auth, tenant seeding, flake control (see browser-e2e-testing) — driving a change end to end before calling it done (see verify), or wiring the CI that runs the suite (see ci-cd).
 ---
 
 # Write tests (what and how to test on this stack)
@@ -89,12 +89,10 @@ outbound HTTP call, the clock — and run the real logic under test through it.
   loading (skeleton), empty (no rows), error (retry visible), success (data renders).
   Render under your locale provider to check translated strings and **RTL** direction
   (`dir="rtl"`) so a mirrored layout doesn't regress silently.
-- **Top of the pyramid** — a *few* end-to-end browser tests (Playwright-style) of the
-  critical **cookie-JWT + CSRF + RBAC-gated** flows: log in, obtain the HttpOnly
-  cookie, send the CSRF header, and confirm a viewer is blocked where an admin passes.
-  Drive these with **tenant-scoped fixtures** so each run sees only its own tenant's
-  data. Keep the count small — they are slow and brittle; push detail down to the
-  unit and integration layers above.
+- **Top of the pyramid** — keep a *few* real-browser E2E tests for the critical
+  journeys and push all other detail down to the layers above; see
+  `browser-e2e-testing` for fixtures, auth/storage-state, tenant seeding and flake
+  control.
 
 ## Adapt to your repo
 Rename `Entreprise`/`entreprise`, the perm codenames, the cookie name (`access` vs your
@@ -124,5 +122,6 @@ and run the suite against the same database engine as production so behavior mat
 - `celery-tasks`
 - `money-decimal`
 - `db-concurrency`
+- `browser-e2e-testing`
 - `verify`
 - `ci-cd`
