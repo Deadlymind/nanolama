@@ -42,3 +42,18 @@ def test_readme_table_in_sync():
         "README.md is out of sync with catalog.yaml - "
         "run: python scripts/generate_readme.py"
     )
+
+
+def test_readme_generated_blocks_in_sync():
+    """Badges AND table must both match their sources of truth."""
+    current = generate_readme.README.read_text(encoding="utf-8")
+    assert current == generate_readme.apply_all(current), (
+        "README.md generated blocks are stale - "
+        "run: python scripts/generate_readme.py"
+    )
+
+
+def test_skills_badge_matches_real_count():
+    badges = generate_readme.render_badges()
+    count = len(_skill_dirs())
+    assert f"skills-{count}-blue" in badges, f"badge should report {count} skills"
